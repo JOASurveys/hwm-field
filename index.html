@@ -1,0 +1,901 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b3d6e">
+<title>JOA HWM Field</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --bg:#f4f6f8; --card:#ffffff; --ink:#111820; --muted:#5b6672; --line:#d5dbe1;
+  --brand:#0b3d6e; --brand-ink:#ffffff; --accent:#0a6cc2;
+  --ok:#137a3a; --ok-bg:#dff3e6; --warn:#8a5a00; --warn-bg:#fff1cc; --bad:#a3191f; --bad-bg:#fde2e2;
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#0e1318;--card:#18212a;--ink:#e9eef3;--muted:#9aa7b4;--line:#2c3743;
+    --brand:#0b3d6e;--accent:#4aa3f0;--ok:#5fd18a;--ok-bg:#12321f;--warn:#f2c14e;--warn-bg:#3a2d0b;--bad:#ff7b7b;--bad-bg:#3d1416;}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:10;background:var(--brand);color:var(--brand-ink);padding:8px 12px calc(8px) 12px}
+header .row{display:flex;align-items:center;gap:8px;justify-content:space-between}
+header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
+#fixpill{font-weight:700;font-size:14px;padding:4px 10px;border-radius:999px;background:#444;color:#fff;white-space:nowrap}
+#fixpill.q4{background:#1e9e4a}#fixpill.q5{background:#d08a00}#fixpill.q1,#fixpill.q2{background:#c0392b}#fixpill.sim{outline:2px dashed #fff}
+#fixline{font:13px/1.3 ui-monospace,Consolas,monospace;opacity:.92;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+nav{display:flex;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:58px;z-index:9}
+nav button{flex:1;border:0;background:none;padding:12px 2px;font-size:14px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent}
+nav button.on{color:var(--accent);border-bottom-color:var(--accent)}
+main{padding:12px 16px 120px;max-width:760px;margin:0 auto}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.card h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+label{display:block;font-weight:600;margin:12px 0 4px}
+label .hint{display:block;font-weight:400;color:var(--muted);font-size:13px}
+input,select,textarea{width:100%;font:inherit;padding:11px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+textarea{min-height:90px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label{margin:0;font-weight:500;flex:1 1 auto}
+.seg input{display:none}
+.seg span{display:block;text-align:center;padding:10px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer;min-width:70px}
+.seg input:checked+span{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn{display:inline-block;font:inherit;font-weight:650;padding:12px 16px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.big{width:100%;padding:16px;font-size:17px;margin-top:8px}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.5}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font:14px/1.35 ui-monospace,Consolas,monospace}
+.kv b{font-family:system-ui,sans-serif;color:var(--muted);font-weight:600}
+.note{padding:10px 12px;border-radius:8px;font-size:14px;margin:8px 0}
+.note.ok{background:var(--ok-bg);color:var(--ok)}.note.warn{background:var(--warn-bg);color:var(--warn)}.note.bad{background:var(--bad-bg);color:var(--bad)}
+.progress{height:10px;background:var(--line);border-radius:5px;overflow:hidden;margin:8px 0}
+.progress>div{height:100%;width:0;background:var(--accent);transition:width .3s}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.thumbs figure{margin:0;position:relative}
+.thumbs img{width:96px;height:96px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.thumbs select{display:block;width:96px;margin-top:4px;padding:4px;font-size:13px;min-height:0}
+.thumbs button{position:absolute;top:2px;right:2px;border:0;background:rgba(0,0,0,.65);color:#fff;border-radius:50%;width:26px;height:26px;font-size:15px}
+.rec{display:flex;gap:10px;align-items:flex-start;border-bottom:1px solid var(--line);padding:10px 0}
+.rec:last-child{border-bottom:0}
+.rec .meta{flex:1;min-width:0}
+.rec .t{font-weight:650}
+.rec .s{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 7px;border-radius:5px;margin-right:4px;background:var(--line)}
+.tag.q4{background:var(--ok-bg);color:var(--ok)}.tag.q5,.tag.dev{background:var(--warn-bg);color:var(--warn)}.tag.none{background:var(--bad-bg);color:var(--bad)}
+.pri{display:inline-block;min-width:30px;text-align:center;font-weight:800;font-size:12px;padding:2px 6px;border-radius:5px;color:#fff}
+.pri.p1{background:#c0392b}.pri.p2{background:#d68400}.pri.p3{background:#7b8794}
+.tgt{border-bottom:1px solid var(--line);padding:10px 0}.tgt:last-child{border-bottom:0}
+.tgt .hd{display:flex;gap:8px;align-items:baseline}.tgt .nm{font-weight:650;flex:1}
+.tgt .dist{font:700 14px ui-monospace,Consolas,monospace;white-space:nowrap}
+.tgt .what{font-size:14px;margin:4px 0}.tgt .src{font-size:12px;color:var(--muted)}
+.tgt.done .nm{text-decoration:line-through;opacity:.7}
+#tplot{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;touch-action:none}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111;color:#fff;padding:12px 18px;border-radius:8px;font-weight:600;display:none;z-index:150;max-width:90vw}
+.req::after{content:" *";color:var(--bad)}
+.hide{display:none!important}
+small.mono{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="row"><h1>JOA HWM Field</h1><span id="fixpill">GPS…</span></div>
+  <div id="fixline">Waiting for phone location</div>
+</header>
+<nav>
+  <button data-tab="targets">Targets</button>
+  <button data-tab="new" class="on">New HWM</button>
+  <button data-tab="records">Records</button>
+  <button data-tab="setup">Setup</button>
+</nav>
+<main>
+
+<!-- ================= TARGETS ================= -->
+<section id="tab-targets">
+  <div class="card">
+    <h2>Desktop recon</h2>
+    <div class="grid2">
+      <div><label for="t_comm">Community</label><select id="t_comm"></select></div>
+      <div><label>&nbsp;</label><button class="btn" id="btnReconPdf" style="width:100%">Open recon PDF</button></div>
+    </div>
+    <div class="btns" style="margin-top:10px">
+      <label class="btn primary" style="margin:0">Import recon files<input type="file" id="t_import" accept=".csv,.kml,.pdf,.zip,text/csv,application/pdf,application/zip,application/vnd.google-earth.kml+xml" multiple class="hide"></label>
+      <button class="btn danger" id="btnClearTargets">Remove this community…</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin:8px 0 0">Pick the *_HWM_Targets.csv (or .kml) and *_APRFC_Summary.pdf files, or one .zip of the whole Desktop Recons folder. The community comes from the file name. Importing again updates the targets and keeps what you've marked done. Do this before you leave signal.</p>
+    <div id="t_importMsg" class="note ok hide"></div>
+  </div>
+  <div class="card">
+    <h2>Around you <span id="t_posSrc" style="text-transform:none;font-weight:500"></span></h2>
+    <svg id="tplot" viewBox="0 0 400 300" role="img" aria-label="Plot of targets around your position"></svg>
+    <div class="btns" style="margin-top:8px">
+      <label style="font-weight:500;display:flex;gap:8px;align-items:center;margin:0"><input type="checkbox" id="t_hideDone" style="width:auto"> Hide done</label>
+      <label style="font-weight:500;display:flex;gap:8px;align-items:center;margin:0"><input type="checkbox" id="t_byDist" checked style="width:auto"> Sort by distance</label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Targets <span id="t_count"></span></h2>
+    <div id="t_list"></div>
+  </div>
+</section>
+
+<!-- ================= NEW / EDIT ================= -->
+<section id="tab-new" class="on">
+  <div id="editBanner" class="note warn hide"></div>
+
+  <div class="card">
+    <h2>Mark</h2>
+    <label class="req" for="f_community">Community</label>
+    <select id="f_community"></select>
+    <input id="f_community_other" class="hide" placeholder="Community name" style="margin-top:6px">
+
+    <label for="f_target">Recon target<span class="hint">Optional. Links this HWM to a desktop‑recon target.</span></label>
+    <select id="f_target"><option value="">— none —</option></select>
+    <div id="f_targetInfo" class="note warn hide" style="font-size:13px"></div>
+
+    <label class="req">Event / basis</label>
+    <select id="f_event">
+      <option value="DR-4893-AK Typhoon Halong 2025">DR-4893-AK Typhoon Halong (Oct 2025)</option>
+      <option value="DR-4730-AK Breakup 2023">DR-4730-AK breakup/snowmelt (May–Jun 2023)</option>
+      <option value="Breakup flood (other year)">Breakup flood (other year)</option>
+      <option value="Other historical event">Other historical event (explain in notes)</option>
+      <option value="Unknown">Unknown</option>
+    </select>
+
+    <label class="req">Disposition<span class="hint">New HWM surveyed now, flagged for later, or a flagged HWM now being surveyed</span></label>
+    <div class="seg" data-name="disposition">
+      <label><input type="radio" name="disposition" value="Surveyed" checked><span>Surveyed</span></label>
+      <label><input type="radio" name="disposition" value="Flagged"><span>Flagged</span></label>
+      <label><input type="radio" name="disposition" value="Retrieved"><span>Retrieved</span></label>
+    </div>
+
+    <div class="grid2">
+      <div><label for="f_point">Point number</label><input id="f_point" type="number" inputmode="numeric"></div>
+      <div id="wrap_flag" class="hide"><label for="f_flag">Flag ID</label><input id="f_flag"></div>
+    </div>
+
+    <label class="req" for="f_hwmtype">HWM type (evidence)</label>
+    <select id="f_hwmtype">
+      <option value="">— choose —</option>
+      <option>Seed Line</option><option>Debris Line</option><option>Debris Snag</option><option>Mud Line</option>
+      <option>Wash Line</option><option>Eye Witness</option><option>Recording Device</option>
+      <option>Identified from Photograph</option><option value="other">Other (describe)</option>
+    </select>
+    <input id="f_hwmtype_other" class="hide" placeholder="Describe the evidence" style="margin-top:6px">
+
+    <label class="req">Point type (SOO)</label>
+    <div class="seg">
+      <label><input type="radio" name="pointtype" value="HWM" checked><span>HWM</span></label>
+      <label><input type="radio" name="pointtype" value="debris line"><span>Debris line</span></label>
+      <label><input type="radio" name="pointtype" value="profile"><span>Profile</span></label>
+      <label><input type="radio" name="pointtype" value="ground reference"><span>Ground ref</span></label>
+      <label><input type="radio" name="pointtype" value="control check"><span>Control check</span></label>
+    </div>
+
+    <div class="grid2">
+      <div><label for="f_feature">Feature name<span class="hint">store, school, beach road…</span></label><input id="f_feature"></div>
+      <div><label>Elevated level<span class="hint">&nbsp;</span></label>
+        <div class="seg">
+          <label><input type="radio" name="elevlevel" value="On ground" checked><span>On ground</span></label>
+          <label><input type="radio" name="elevlevel" value="Above ground"><span>Above</span></label>
+        </div></div>
+    </div>
+
+    <label class="req">Setting</label>
+    <div class="seg">
+      <label><input type="radio" name="env" value="Coastal"><span>Coastal</span></label>
+      <label><input type="radio" name="env" value="Riverine" checked><span>Riverine</span></label>
+      <label><input type="radio" name="env" value="Combination"><span>Combination</span></label>
+      <label><input type="radio" name="env" value="Unknown"><span>Unknown</span></label>
+    </div>
+
+    <label class="req">Water condition</label>
+    <div class="seg">
+      <label><input type="radio" name="water" value="Still Water" checked><span>Still water</span></label>
+      <label><input type="radio" name="water" value="Wave Affected"><span>Wave affected</span></label>
+      <label><input type="radio" name="water" value="Run-up"><span>Run-up</span></label>
+      <label><input type="radio" name="water" value="Unknown"><span>Unknown</span></label>
+    </div>
+
+    <label class="req">HWM quality (USGS TM3‑A24)<span class="hint">Quality of the mark itself, not of the survey</span></label>
+    <select id="f_quality">
+      <option value="">— choose —</option>
+      <option value="Excellent">Excellent (±0.05 ft / ±0.015 m)</option>
+      <option value="Good">Good (±0.10 ft / ±0.030 m)</option>
+      <option value="Fair">Fair (±0.20 ft / ±0.061 m)</option>
+      <option value="Poor">Poor (±0.40 ft / ±0.122 m)</option>
+      <option value="Very Poor">Very poor (&gt;±0.40 ft / &gt;±0.122 m)</option>
+    </select>
+
+    <div class="grid2">
+      <div><label class="req" for="f_source">Source</label>
+        <select id="f_source">
+          <option>Physical mark</option><option>Resident interview</option><option>Photo / video</option>
+          <option>Recording device</option><option>Agency / prior survey</option>
+        </select></div>
+      <div><label class="req" for="f_conf">Source confidence</label>
+        <select id="f_conf"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Location</h2>
+    <p style="margin:0 0 6px;font-size:14px;color:var(--muted)">Stand at the mark and capture the phone's location. It's an approximate locator (a few metres); surveyed coordinates and elevations are added in the office. If the phone has no fix, the first photo's own GPS tag is used.</p>
+    <button class="btn primary big" id="btnPos" type="button">📍 Use my location</button>
+    <div id="posResult"></div>
+  </div>
+
+  <div class="card">
+    <h2>Measure‑up</h2>
+    <div class="seg">
+      <label><input type="radio" name="mu" value="NO" checked><span>No</span></label>
+      <label><input type="radio" name="mu" value="YES"><span>Yes, HWM is above the shot</span></label>
+    </div>
+    <div id="muFields" class="hide">
+      <div class="grid2">
+        <div><label for="f_muh">Height above shot</label><input id="f_muh" type="number" step="0.001" inputmode="decimal"></div>
+        <div><label>Units</label><div class="seg">
+          <label><input type="radio" name="muunits" value="Feet" checked><span>ft</span></label>
+          <label><input type="radio" name="muunits" value="Meters"><span>m</span></label></div></div>
+      </div>
+      <label for="f_muref">Reference shot is…</label>
+      <select id="f_muref"><option>Ground at base of wall</option><option>Top of foundation</option><option>Floor / threshold</option><option>Top of pile / post</option><option>Other (notes)</option></select>
+      <label for="f_mumethod">Measured with</label>
+      <select id="f_mumethod"><option>Steel tape</option><option>Fiberglass tape</option><option>Level rod</option><option>Laser distance meter</option><option>Other (notes)</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Photos &amp; notes</h2>
+    <label class="req">HWM photo(s)<span class="hint">Shoot a close‑up (with tape/scale) and a wide context shot. Keep faces, house numbers and plates out of frame. The direction is read from the photo when the camera records it; otherwise pick it under the photo. The delivery copy has location data removed; the original is kept for JOA.</span></label>
+    <div class="btns">
+      <label class="btn primary" style="margin:0">📷 Take photo<input type="file" id="f_photo" accept="image/*" capture="environment" class="hide"></label>
+      <label class="btn" style="margin:0">Add from gallery<input type="file" id="f_photo_gal" accept="image/*" multiple class="hide"></label>
+      <span id="photoCount" style="align-self:center;color:var(--muted);font-size:14px"></span>
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+    <label for="f_notes">Description / notes<span class="hint">Do not write residents' names. Use "resident interview".</span></label>
+    <textarea id="f_notes"></textarea>
+    <div id="piiWarn" class="note warn hide">This looks like it may contain a person's name or phone number. Please check.</div>
+  </div>
+
+  <button class="btn primary big" id="btnSave">Save HWM</button>
+  <button class="btn big hide" id="btnCancelEdit">Cancel edit</button>
+</section>
+
+<!-- ================= RECORDS ================= -->
+<section id="tab-records">
+  <div class="card">
+    <h2>Export</h2>
+    <p style="margin:0 0 8px;font-size:14px;color:var(--muted)">Saves one .zip containing CSV, GeoJSON, a JSON backup, the cleaned photos (for delivery), and the original photos (internal). Send it to the office after each village.</p>
+    <div class="btns">
+      <button class="btn primary" id="btnExport">Export all</button>
+      <button class="btn" id="btnExportNew">Export not yet exported</button>
+    </div>
+    <label style="font-weight:500;display:flex;gap:8px;align-items:center"><input type="checkbox" id="exOrig" checked style="width:auto">
+      Include full‑resolution originals (with location data, JOA internal only). Untick to make a smaller zip for a slow connection.</label>
+    <div id="storeInfo" class="note ok hide"></div>
+  </div>
+  <div class="card">
+    <h2>Saved HWMs <span id="recCount"></span></h2>
+    <div id="recList"></div>
+  </div>
+</section>
+
+<!-- ================= SETUP ================= -->
+<section id="tab-setup">
+  <div class="card">
+    <h2>Crew</h2>
+    <div class="grid2">
+      <div><label class="req" for="s_team">Team ID<span class="hint">One per setup, e.g. A, B, C, D</span></label><input id="s_team" maxlength="8"></div>
+      <div><label class="req" for="s_observer">Observer initials</label><input id="s_observer" maxlength="6"></div>
+    </div>
+    <div class="grid2">
+      <div><label for="s_project">Project</label><input id="s_project"></div>
+      <div><label for="s_nextpt">Next point number</label><input id="s_nextpt" type="number" inputmode="numeric"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Display</h2>
+    <div class="seg">
+      <label><input type="radio" name="s_units" value="ft" checked><span>Feet</span></label>
+      <label><input type="radio" name="s_units" value="m"><span>Meters</span></label>
+    </div>
+  </div>
+  <button class="btn primary big" id="btnSaveSettings">Save setup</button>
+  <div class="card" style="margin-top:16px">
+    <h2>Device</h2>
+    <div class="kv" id="devinfo"></div>
+    <div class="btns" style="margin-top:10px"><button class="btn danger" id="btnWipe">Delete all records on this device…</button></div>
+  </div>
+</section>
+</main>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   JOA HWM Field — offline HWM documentation (form, photos, phone GPS).
+   Surveyed coordinates and elevations are added in the office.
+   ===================================================================== */
+const APP_VERSION = '1.0.0';
+const FT = 0.3048; // international foot; office script handles US survey foot
+const COMMUNITIES = ['Glennallen','Crooked Creek','Ruby','Kotlik','Newtok','Mertarvik','Nunapitchuk','Marshall',
+  'Pilot Station','Mountain Village','Akiak','Napaskiak','Circle','Bethel'];
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const radio = n => (document.querySelector(`input[name="${n}"]:checked`)||{}).value;
+const setRadio = (n,v) => { const el=document.querySelector(`input[name="${n}"][value="${CSS.escape(v||'')}"]`); if(el) el.checked=true; };
+function toast(msg, ms=2600){ const t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',ms); }
+const pad=(n,w=2)=>String(n).padStart(w,'0');
+const fmt=(v,d)=> (v==null||isNaN(v))?'—':Number(v).toFixed(d);
+
+/* ---------------- IndexedDB ---------------- */
+let db;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('joa_hwm',2);
+    r.onupgradeneeded=(ev)=>{const d=r.result; const have=n=>d.objectStoreNames.contains(n);
+      if(!have('records')) d.createObjectStore('records',{keyPath:'id'});
+      if(!have('photos')) d.createObjectStore('photos',{keyPath:'id'});
+      if(!have('nmea')) d.createObjectStore('nmea',{keyPath:'id',autoIncrement:true});
+      if(!have('meta')) d.createObjectStore('meta',{keyPath:'k'});
+      if(!have('targets')) d.createObjectStore('targets',{keyPath:'key'});   // community|ID
+      if(!have('docs')) d.createObjectStore('docs',{keyPath:'key'});};       // community|filename
+    r.onsuccess=()=>{db=r.result;res(db)}; r.onerror=()=>rej(r.error);
+  });
+}
+function tx(store,mode,fn){
+  return new Promise((res,rej)=>{const t=db.transaction(store,mode);const s=t.objectStore(store);let out;
+    const r=fn(s); if(r&&'onsuccess' in r) r.onsuccess=()=>{out=r.result};
+    t.oncomplete=()=>res(out); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error);});
+}
+const dbGet=(s,k)=>tx(s,'readonly',st=>st.get(k));
+const dbAll=s=>tx(s,'readonly',st=>st.getAll());
+const dbPut=(s,v)=>tx(s,'readwrite',st=>st.put(v));
+const dbDel=(s,k)=>tx(s,'readwrite',st=>st.delete(k));
+const dbClear=s=>tx(s,'readwrite',st=>st.clear());
+
+/* ---------------- Settings ---------------- */
+const DEFAULTS={team:'',observer:'',project:'202655 FEMA HWM',nextPoint:1,units:'ft'};
+let S={...DEFAULTS};
+async function loadSettings(){ const m=await dbGet('meta','settings'); if(m) S={...DEFAULTS,...m.v}; }
+async function saveSettings(){ await dbPut('meta',{k:'settings',v:S}); }
+function settingsToForm(){
+  $('#s_team').value=S.team; $('#s_observer').value=S.observer; $('#s_project').value=S.project; $('#s_nextpt').value=S.nextPoint;
+  setRadio('s_units',S.units);
+}
+function formToSettings(){
+  S.team=$('#s_team').value.trim().toUpperCase(); S.observer=$('#s_observer').value.trim().toUpperCase();
+  S.project=$('#s_project').value.trim(); S.nextPoint=parseInt($('#s_nextpt').value)||1;
+  S.units=radio('s_units');
+}
+
+/* ---------------- Phone location ---------------- */
+let lastFix=null;   // latest phone fix {lat,lon,acc,t}
+let pos=null;       // position attached to the form
+function mPerDeg(lat){ const p=lat*Math.PI/180;
+  return {n:111132.954-559.822*Math.cos(2*p)+1.175*Math.cos(4*p), e:111412.84*Math.cos(p)-93.5*Math.cos(3*p)}; }
+function hDisp(m){ return S.units==='ft'?Math.round(m/FT)+' ft':Math.round(m)+' m'; }
+function startGPS(){
+  if(!navigator.geolocation){ $('#fixpill').textContent='NO GPS'; $('#fixline').textContent='This device has no location service'; return; }
+  navigator.geolocation.watchPosition(p=>{ lastFix={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,t:Date.now()}; renderFix();
+      if($('#tab-targets').classList.contains('on')) renderTargets(); },
+    e=>{ $('#fixpill').textContent='NO GPS'; $('#fixline').textContent='Location: '+e.message; },
+    {enableHighAccuracy:true,maximumAge:5000,timeout:60000});
+  setInterval(renderFix,5000);
+}
+const fixFresh=()=>lastFix&&Date.now()-lastFix.t<60000;
+function renderFix(){
+  const pill=$('#fixpill');
+  if(!fixFresh()){ pill.textContent='NO FIX'; pill.className=''; $('#fixline').textContent='Waiting for phone location'; return; }
+  pill.textContent='GPS ±'+hDisp(lastFix.acc); pill.className=lastFix.acc<=10?'q4':'q5';
+  $('#fixline').textContent=`${lastFix.lat.toFixed(6)}, ${lastFix.lon.toFixed(6)}`;
+}
+function capturePos(){
+  if(!fixFresh()){ toast('No phone location yet. Try again in a moment, or a photo with GPS will be used.'); return; }
+  pos={src:'Phone GPS',lat:lastFix.lat,lon:lastFix.lon,acc:lastFix.acc,time:new Date(lastFix.t).toISOString()}; renderPos();
+}
+function renderPos(){
+  const el=$('#posResult');
+  if(!pos){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="note ${pos.acc!=null&&pos.acc<=15?'ok':'warn'}">${esc(pos.src)}: ${pos.lat.toFixed(6)}, ${pos.lon.toFixed(6)}${pos.acc!=null?' · ±'+hDisp(pos.acc):''}</div>`;
+}
+
+/* ---------------- Photos (EXIF stripped by re-encoding) ---------------- */
+let formPhotos=[]; // [{id, blob, url, isNew}]
+async function processPhoto(file){
+  let bmp;
+  try{ bmp=await createImageBitmap(file,{imageOrientation:'from-image'}); }
+  catch{ bmp=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(file);}); }
+  const max=2400, w=bmp.width,h=bmp.height, k=Math.min(1,max/Math.max(w,h));
+  const c=document.createElement('canvas'); c.width=Math.round(w*k); c.height=Math.round(h*k);
+  c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+  return await new Promise(r=>c.toBlob(r,'image/jpeg',0.85));
+}
+async function onPhotos(e){
+  const files=[...e.target.files]; e.target.value='';
+  let noDir=0;
+  for(const f of files){ try{ const x=await readExif(f); const blob=await processPhoto(f);
+      formPhotos.push({id:'p'+Date.now()+Math.random().toString(36).slice(2,7),blob,orig:f,url:URL.createObjectURL(blob),isNew:true,
+        hdg:x.hdg??null,hdgRef:x.hdgRef||null,hdgSrc:x.hdg!=null?'photo':null,lat:x.lat??null,lon:x.lon??null,taken:x.taken||(f.lastModified?new Date(f.lastModified):new Date()).toISOString()});
+      if(x.hdg==null) noDir++;
+    }catch(err){ toast('Could not read photo'); } }
+  renderThumbs();
+  if(!pos){ const g=formPhotos.find(p=>p.lat!=null); if(fixFresh()) capturePos(); else if(g){ pos={src:'Photo GPS',lat:g.lat,lon:g.lon,acc:null,time:g.taken}; renderPos(); } }
+  if(noDir&&files.length) toast(noDir===files.length?'No direction in the photo(s). Pick “Facing…” under each photo.':`${noDir} photo(s) without a direction. Pick “Facing…” under it.`,3500);
+}
+function renderThumbs(){
+  $('#thumbs').innerHTML=formPhotos.map((p,i)=>`<figure><img src="${p.url}" alt="HWM photo ${i+1}">${p.hdg!=null?`<span style="position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.65);color:#fff;font:700 12px system-ui;padding:1px 5px;border-radius:4px">${photoDirLabel(p)}</span>`:''}<button data-i="${i}" aria-label="Remove photo">×</button>${p.hdgSrc==='photo'?'':`<select data-i="${i}" aria-label="Direction photo ${i+1} faces"><option value="">Facing…</option>${DIR16.map((d,k)=>`<option value="${k}"${p.hdg!=null&&dir16(p.hdg)===d?' selected':''}>${d}</option>`).join('')}</select>`}</figure>`).join('');
+  $('#photoCount').textContent=formPhotos.length?`${formPhotos.length} photo${formPhotos.length>1?'s':''}`:'';
+  $$('#thumbs button').forEach(b=>b.onclick=()=>{ formPhotos.splice(+b.dataset.i,1); renderThumbs(); });
+  $$('#thumbs select').forEach(el=>el.onchange=()=>{ const p=formPhotos[+el.dataset.i]; if(el.value===''){ p.hdg=null; p.hdgRef=null; p.hdgSrc=null; } else { p.hdg=+el.value*22.5; p.hdgRef='T'; p.hdgSrc='manual'; } renderThumbs(); });
+}
+
+/* ---------------- Photo EXIF: direction, GPS, time ---------------- */
+const DIR16=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const dir16=h=>h==null?'':DIR16[Math.round((((h%360)+360)%360)/22.5)%16];
+async function readExif(file){
+  const out={};
+  try{
+    const buf=await file.slice(0,262144).arrayBuffer(); const v=new DataView(buf);
+    if(v.getUint16(0)!==0xFFD8) return out;
+    let o=2;
+    while(o+4<v.byteLength){
+      const mk=v.getUint16(o), len=v.getUint16(o+2);
+      if(mk===0xFFE1 && v.getUint32(o+4)===0x45786966){ // "Exif"
+        const t=o+10, le=v.getUint16(t)===0x4949; const U16=a=>v.getUint16(t+a,le), U32=a=>v.getUint32(t+a,le);
+        const rat=a=>{ const d=U32(a+4); return d?U32(a)/d:null; };
+        const ifd=a=>{ const n=U16(a), m={}; for(let i=0;i<n;i++){ const e=a+2+i*12; m[U16(e)]={type:U16(e+2),cnt:U32(e+4),vo:e+8}; } return m; };
+        const val=en=>{ if(!en) return null; const sz={1:1,2:1,3:2,4:4,5:8}[en.type]||1; const at=en.cnt*sz>4?U32(en.vo):en.vo;
+          if(en.type===2){ let s=''; for(let i=0;i<en.cnt-1;i++) s+=String.fromCharCode(v.getUint8(t+at+i)); return s; }
+          if(en.type===5){ const r=[]; for(let i=0;i<en.cnt;i++) r.push(rat(at+i*8)); return en.cnt===1?r[0]:r; }
+          if(en.type===3) return U16(at); if(en.type===4) return U32(at); return v.getUint8(t+at); };
+        const i0=ifd(U32(4));
+        if(i0[0x8769]){ const ex=ifd(val(i0[0x8769])); const dt=val(ex[0x9003]); if(dt){ const m=dt.match(/(\d+):(\d+):(\d+) (\d+):(\d+):(\d+)/); if(m) out.taken=new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5],+m[6]).toISOString(); } }
+        if(i0[0x8825]){ const g=ifd(val(i0[0x8825]));
+          const dms=a=>Array.isArray(a)&&a.length===3&&a.every(x=>x!=null)?a[0]+a[1]/60+a[2]/3600:null;
+          const la=dms(val(g[2])), lo=dms(val(g[4]));
+          if(la!=null&&lo!=null&&(la||lo)){ out.lat=(val(g[1])==='S'?-1:1)*la; out.lon=(val(g[3])==='W'?-1:1)*lo; }
+          const d=val(g[17]); if(d!=null&&!isNaN(d)){ out.hdg=d; out.hdgRef=val(g[16])||'T'; } }
+        break;
+      }
+      if(mk===0xFFDA||len<2) break; o+=2+len;
+    }
+  }catch(e){ console.warn('EXIF',e); }
+  return out;
+}
+function photoDirLabel(p){
+  if(p.hdg==null) return '';
+  return dir16(p.hdg)+(String(p.hdgRef||'T').toUpperCase().startsWith('M')?' mag':'');
+}
+async function captioned(blob,text){
+  const bmp=await createImageBitmap(blob); const c=document.createElement('canvas'); c.width=bmp.width; c.height=bmp.height;
+  const x=c.getContext('2d'); x.drawImage(bmp,0,0);
+  const band=Math.max(30,Math.round(Math.min(c.width,c.height)*0.06)); const fs=Math.round(band*0.56);
+  x.fillStyle='rgba(0,0,0,0.62)'; x.fillRect(0,c.height-band,c.width,band);
+  x.fillStyle='#fff'; x.font=`700 ${fs}px system-ui,"Segoe UI",Roboto,Arial,sans-serif`; x.textBaseline='middle';
+  x.fillText(text,Math.round(band*0.35),c.height-band/2,c.width-band*0.7);
+  return await new Promise(r=>c.toBlob(r,'image/jpeg',0.88));
+}
+function captionText(r,p){
+  const d=p.taken?new Date(p.taken):new Date(r.created); const date=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  return [r.community, r.point_number!=null?`Pt ${r.point_number}`:null, date, photoDirLabel(p)||null].filter(Boolean).join(' · ');
+}
+
+/* ---------------- Desktop recon: targets & PDFs ---------------- */
+let TG=[], DOCS=[];
+function commFromFile(name){
+  let b=name.split('/').pop().replace(/\.(csv|kml|pdf)$/i,'');
+  b=b.replace(/_HWM_Targets.*$/i,'').replace(/_APRFC_Summary.*$/i,'').replace(/_(Desktop_)?Recon.*$/i,'').replace(/_\d{8}$/,'');
+  const nm=b.replace(/[_]+/g,' ').trim();
+  return COMMUNITIES.find(c=>c.toLowerCase()===nm.toLowerCase()) || (nm.toLowerCase()==='glenallen'?'Glennallen':nm);
+}
+function parseCSV(text){
+  const rows=[]; let row=[], f='', q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true; else if(c===','){row.push(f);f='';} else if(c==='\n'){row.push(f);rows.push(row);row=[];f='';} else if(c!=='\r') f+=c; }
+  if(f!==''||row.length){row.push(f);rows.push(row);}
+  const hd=(rows.shift()||[]).map(h=>h.replace(/^\ufeff/,'').trim());
+  return rows.filter(r=>r.some(x=>x.trim())).map(r=>Object.fromEntries(hd.map((h,i)=>[h,(r[i]||'').trim()])));
+}
+const pick=(o,...ks)=>{ for(const k of ks){ const hit=Object.keys(o).find(x=>x.toLowerCase()===k.toLowerCase()); if(hit&&o[hit]!=='') return o[hit]; } return ''; };
+function targetsFromCSV(text,comm){
+  return parseCSV(text).map(o=>({community:comm, id:pick(o,'ID','Target_ID','Name'), priority:parseInt(pick(o,'Priority'))||3,
+    name:pick(o,'Target','Description','Name'), lat:parseFloat(pick(o,'Lat_WGS84','Latitude','Lat','Y')), lon:parseFloat(pick(o,'Lon_WGS84','Longitude','Lon','Long','X')),
+    source:pick(o,'Source'), what:pick(o,'What_to_survey','What to survey','Notes')})).filter(t=>t.id||t.name);
+}
+function targetsFromKML(text,comm){
+  const x=new DOMParser().parseFromString(text,'application/xml'); const out=[];
+  x.querySelectorAll('Placemark').forEach((pm,i)=>{
+    const nm=(pm.querySelector('name')?.textContent||'').trim(); const m=nm.match(/^(\S+-\d+)\s+(.*)$/);
+    const co=(pm.querySelector('Point coordinates')?.textContent||'').trim().split(',');
+    const folder=pm.parentElement?.querySelector(':scope > name')?.textContent||''; const pr=parseInt((folder.match(/\d/)||[])[0])||parseInt((pm.querySelector('styleUrl')?.textContent||'').replace(/\D/g,''))||3;
+    out.push({community:comm,id:m?m[1]:('K'+(i+1)),name:m?m[2]:nm,priority:pr,lat:parseFloat(co[1]),lon:parseFloat(co[0]),
+      source:'',what:(pm.querySelector('description')?.textContent||'').trim()});
+  });
+  return out;
+}
+async function unzipEntries(buf){
+  const u=new Uint8Array(buf), dv=new DataView(buf); let e=-1;
+  for(let i=u.length-22;i>=Math.max(0,u.length-70000);i--) if(dv.getUint32(i,true)===0x06054b50){e=i;break;}
+  if(e<0) throw new Error('not a zip file');
+  const n=dv.getUint16(e+10,true); let off=dv.getUint32(e+16,true); const out=[];
+  for(let k=0;k<n;k++){
+    const method=dv.getUint16(off+10,true), csize=dv.getUint32(off+20,true), nlen=dv.getUint16(off+28,true), xlen=dv.getUint16(off+30,true), clen=dv.getUint16(off+32,true), lho=dv.getUint32(off+42,true);
+    const name=new TextDecoder().decode(u.subarray(off+46,off+46+nlen)); off+=46+nlen+xlen+clen;
+    if(name.endsWith('/')) continue;
+    const ds=lho+30+dv.getUint16(lho+26,true)+dv.getUint16(lho+28,true); const raw=u.subarray(ds,ds+csize);
+    let data; if(method===0) data=raw; else if(method===8){ data=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()); } else continue;
+    out.push({name,data});
+  }
+  return out;
+}
+async function importRecon(e){
+  const picked=[...e.target.files]; e.target.value=''; if(!picked.length) return;
+  let files=[];
+  for(const f of picked){
+    if(/\.zip$/i.test(f.name)){ try{ (await unzipEntries(await f.arrayBuffer())).forEach(z=>files.push({name:z.name,blob:new Blob([z.data]),bytes:z.data})); }catch(err){ toast('Could not read '+f.name+': '+err.message,4000); } }
+    else files.push({name:f.name,blob:f});
+  }
+  files=files.filter(f=>/\.(csv|kml|pdf)$/i.test(f.name) && !/(^|\/)(__MACOSX|\.)/.test(f.name));
+  const byComm={}; const msgs=[];
+  for(const f of files){ const c=commFromFile(f.name); (byComm[c]=byComm[c]||[]).push(f); }
+  for(const [comm,fs] of Object.entries(byComm)){
+    const csv=fs.find(f=>/_targets.*\.csv$/i.test(f.name))||fs.find(f=>/\.csv$/i.test(f.name));
+    const kml=fs.find(f=>/\.kml$/i.test(f.name));
+    let list=null;
+    if(csv) list=targetsFromCSV(await csv.blob.text(),comm); else if(kml) list=targetsFromKML(await kml.blob.text(),comm);
+    if(list){
+      const old=Object.fromEntries(TG.filter(t=>t.community===comm).map(t=>[t.id,t]));
+      for(const t of list){ const o=old[t.id]; t.key=comm+'|'+t.id; t.status=o?.status||'open'; t.statusNote=o?.statusNote||''; t.statusTime=o?.statusTime||null; await dbPut('targets',t); delete old[t.id]; }
+      for(const id in old){ if(old[id].status==='open') await dbDel('targets',old[id].key); }  // dropped from recon, nothing recorded
+      msgs.push(`${comm}: ${list.length} targets (${list.filter(t=>!isNaN(t.lat)).length} with coordinates)`);
+    }
+    for(const pdf of fs.filter(f=>/\.pdf$/i.test(f.name))){
+      const nm=pdf.name.split('/').pop();
+      for(const d of DOCS.filter(d=>d.community===comm)) await dbDel('docs',d.key);
+      await dbPut('docs',{key:comm+'|'+nm,community:comm,name:nm,blob:new Blob([await pdf.blob.arrayBuffer()],{type:'application/pdf'}),added:new Date().toISOString()});
+      msgs.push(`${comm}: recon PDF`);
+    }
+  }
+  await loadTargets(); fillTargetComms();
+  const n=$('#t_importMsg'); n.innerHTML=msgs.length?msgs.map(esc).join('<br>'):'No targets or recon PDFs found in those files.'; n.className='note '+(msgs.length?'ok':'warn');
+  if(msgs.length){ const first=Object.keys(byComm)[0]; if(!$('#t_comm').value&&first) $('#t_comm').value=first; }
+  renderTargets(); fillTargetSelect();
+}
+async function loadTargets(){ TG=await dbAll('targets'); DOCS=await dbAll('docs'); }
+function targetComms(){ return [...new Set([...TG.map(t=>t.community),...DOCS.map(d=>d.community)])].sort(); }
+function fillTargetComms(){
+  const cur=$('#t_comm').value, cs=targetComms();
+  $('#t_comm').innerHTML=cs.length?cs.map(c=>`<option>${esc(c)}</option>`).join(''):'<option value="">(nothing imported)</option>';
+  if(cs.includes(cur)) $('#t_comm').value=cur; else { const fc=$('#f_community').value; if(cs.includes(fc)) $('#t_comm').value=fc; }
+}
+function myPos(){
+  if(fixFresh()) return {...lastFix,src:'phone GPS ±'+hDisp(lastFix.acc)};
+  return null;
+}
+function distBrg(a,b){ const m=mPerDeg(a.lat); const dn=(b.lat-a.lat)*m.n, de=(b.lon-a.lon)*m.e; return {d:Math.hypot(dn,de),b:((Math.atan2(de,dn)*180/Math.PI)+360)%360,dn,de}; }
+function fmtDist(d){ if(S.units==='ft'){ const ft=d/FT; return ft<2000?Math.round(ft)+' ft':(d/1609.344).toFixed(2)+' mi'; } return d<1000?Math.round(d)+' m':(d/1000).toFixed(2)+' km'; }
+function linkedHWMs(t){ return (window._recCache||[]).filter(r=>r.target_id===t.id&&r.community===t.community); }
+function renderTargets(){
+  if(!$('#tab-targets').classList.contains('on')) return;
+  const comm=$('#t_comm').value; const me=myPos();
+  $('#t_posSrc').textContent=me?`· from ${me.src}`:'· no position yet';
+  $('#btnReconPdf').disabled=!DOCS.some(d=>d.community===comm); $('#btnClearTargets').disabled=!comm;
+  let ts=TG.filter(t=>t.community===comm).map(t=>{ const has=!isNaN(t.lat)&&!isNaN(t.lon); return {...t,has,db:(me&&has)?distBrg(me,t):null,hw:linkedHWMs(t)}; });
+  if($('#t_hideDone').checked) ts=ts.filter(t=>t.status==='open'&&!t.hw.length);
+  ts.sort((a,b)=> $('#t_byDist').checked&&a.db&&b.db ? a.db.d-b.db.d : (a.db&&!b.db?-1:(!a.db&&b.db?1:(a.priority-b.priority||a.id.localeCompare(b.id,undefined,{numeric:true})))));
+  $('#t_count').textContent=`(${ts.length})`;
+  $('#t_list').innerHTML=ts.length?ts.map(t=>{
+    const done=t.hw.length||t.status!=='open';
+    const st=t.hw.length?`<span class="tag q4">HWM ${t.hw.map(r=>r.point_number).join(', ')}</span>`:(t.status==='none'?'<span class="tag none">No mark found</span>':(t.status==='skip'?'<span class="tag">Skipped</span>':''));
+    return `<div class="tgt ${done?'done':''}"><div class="hd"><span class="pri p${t.priority}">P${t.priority}</span><span class="nm">${esc(t.id)} · ${esc(t.name)}</span>
+      <span class="dist">${t.db?fmtDist(t.db.d)+' '+dir16(t.db.b):(t.has?'':'<span style="color:var(--warn)">no coords</span>')}</span></div>
+      <div class="what">${esc(t.what)}</div><div class="src">${esc(t.source)}${t.has?` · ${t.lat.toFixed(5)}, ${t.lon.toFixed(5)}`:' · location unknown, ask the community'}</div>
+      ${t.statusNote?`<div class="src">Note: ${esc(t.statusNote)}</div>`:''}
+      <div class="btns" style="margin-top:6px">${st}<button class="btn" data-tstart="${esc(t.key)}">Start HWM here</button>
+      <button class="btn" data-tnone="${esc(t.key)}">${t.status==='open'?'No mark found…':'Reopen'}</button></div></div>`;}).join('')
+    :`<p style="color:var(--muted)">${comm?'No targets for '+esc(comm)+'.':'Import the desktop recon files above.'}</p>`;
+  $$('[data-tstart]').forEach(b=>b.onclick=()=>startFromTarget(b.dataset.tstart));
+  $$('[data-tnone]').forEach(b=>b.onclick=()=>markTarget(b.dataset.tnone));
+  plotTargets(TG.filter(t=>t.community===comm&&!isNaN(t.lat)),me);
+}
+function plotTargets(ts,me){
+  const W=400,H=300,pad=28, svg=$('#tplot');
+  const pts=ts.map(t=>({t,lat:t.lat,lon:t.lon})); let farNote='';
+  if(me){ const near=ts.length?Math.min(...ts.map(t=>distBrg(me,t).d)):0;
+    if(ts.length&&near>3000){ const c={lat:ts.reduce((a,t)=>a+t.lat,0)/ts.length,lon:ts.reduce((a,t)=>a+t.lon,0)/ts.length}; const db=distBrg(c,me); farNote=`You are ${fmtDist(db.d)} ${dir16(db.b)} of these targets`; }
+    else pts.push({me:true,lat:me.lat,lon:me.lon}); }
+  (window._recCache||[]).filter(r=>r.community===$('#t_comm').value&&(r.pos||r.gnss)?.lat!=null).forEach(r=>{ const g=r.pos||r.gnss; pts.push({hwm:r,lat:g.lat,lon:g.lon}); });
+  if(!pts.length){ svg.innerHTML=`<text x="200" y="150" text-anchor="middle" fill="currentColor" font-size="14">No target coordinates</text>`; return; }
+  const lat0=pts.reduce((a,p)=>a+p.lat,0)/pts.length, m=mPerDeg(lat0);
+  const xy=pts.map(p=>({...p,x:(p.lon)*m.e,y:(p.lat)*m.n}));
+  let x0=Math.min(...xy.map(p=>p.x)),x1=Math.max(...xy.map(p=>p.x)),y0=Math.min(...xy.map(p=>p.y)),y1=Math.max(...xy.map(p=>p.y));
+  const span=Math.max(x1-x0,(y1-y0)*W/H,60); const cx=(x0+x1)/2, cy=(y0+y1)/2; const k=(W-2*pad)/span;
+  const X=p=>W/2+(p.x-cx)*k, Y=p=>H/2-(p.y-cy)*k;
+  // scale bar
+  const nice=[10,20,50,100,200,500,1000,2000,5000,10000].find(v=>v*k>60)||10000;
+  const col={1:'#c0392b',2:'#d68400',3:'#7b8794'};
+  let g=`<g fill="currentColor" font-family="system-ui,sans-serif">`;
+  g+=`<line x1="${pad}" y1="${H-12}" x2="${pad+nice*k}" y2="${H-12}" stroke="currentColor" stroke-width="2"/><text x="${pad}" y="${H-17}" font-size="11">${nice>=1000?nice/1000+' km':nice+' m'}</text>`;
+  g+=`<path d="M${W-20},12 l-6,16 h12 z" fill="currentColor"/><text x="${W-20}" y="42" font-size="11" text-anchor="middle">N</text>`;
+  for(const p of xy.filter(p=>p.hwm)) g+=`<rect x="${X(p)-4}" y="${Y(p)-4}" width="8" height="8" fill="#137a3a" transform="rotate(45 ${X(p)} ${Y(p)})"/>`;
+  for(const p of xy.filter(p=>p.t)){ const done=p.t.status!=='open'||linkedHWMs(p.t).length;
+    g+=`<circle cx="${X(p)}" cy="${Y(p)}" r="7" fill="${done?'none':col[p.t.priority]||col[3]}" stroke="${col[p.t.priority]||col[3]}" stroke-width="2.5"/><text x="${X(p)+9}" y="${Y(p)+4}" font-size="11" font-weight="700">${esc(p.t.id.replace(/^[A-Z]+-/,''))}</text>`; }
+  for(const p of xy.filter(p=>p.me)) g+=`<circle cx="${X(p)}" cy="${Y(p)}" r="9" fill="#0a6cc2" stroke="#fff" stroke-width="3"/>`;
+  if(farNote) g+=`<text x="${W/2}" y="16" text-anchor="middle" font-size="12" font-weight="600">${esc(farNote)}</text>`;
+  svg.innerHTML=g+'</g>';
+}
+async function startFromTarget(key){
+  const t=TG.find(x=>x.key===key); if(!t) return;
+  if(editing) resetForm(true);
+  switchTab('new');
+  if(COMMUNITIES.includes(t.community)) $('#f_community').value=t.community; else { $('#f_community').value='other'; $('#f_community_other').value=t.community; }
+  fillTargetSelect(); $('#f_target').value=t.id; showTargetInfo();
+  if(!$('#f_feature').value) $('#f_feature').value=t.name.slice(0,80);
+  syncConditional();
+}
+async function markTarget(key){
+  const t=TG.find(x=>x.key===key); if(!t) return;
+  if(t.status!=='open'){ t.status='open'; t.statusNote=''; t.statusTime=null; }
+  else{ const note=prompt(`No mark found at ${t.id}?\nWhat did you find? (e.g. "building replaced", "residents unsure", "snow cover")`, ''); if(note===null) return;
+    t.status='none'; t.statusNote=note.trim(); t.statusTime=new Date().toISOString(); t.statusBy=S.observer; }
+  await dbPut('targets',t); await loadTargets(); renderTargets();
+}
+function fillTargetSelect(){
+  const comm=$('#f_community').value==='other'?$('#f_community_other').value.trim():$('#f_community').value;
+  const cur=$('#f_target').value;
+  const ts=TG.filter(t=>t.community===comm).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));
+  $('#f_target').innerHTML='<option value="">— none —</option>'+ts.map(t=>`<option value="${esc(t.id)}">${esc(t.id)} · P${t.priority} · ${esc(t.name.slice(0,60))}</option>`).join('');
+  if(ts.some(t=>t.id===cur)) $('#f_target').value=cur;
+  $('#f_target').disabled=!ts.length; showTargetInfo();
+}
+function showTargetInfo(){
+  const comm=$('#f_community').value==='other'?$('#f_community_other').value.trim():$('#f_community').value;
+  const t=TG.find(x=>x.community===comm&&x.id===$('#f_target').value); const el=$('#f_targetInfo');
+  if(!t){ el.classList.add('hide'); return; }
+  const me=myPos(); const db=(me&&!isNaN(t.lat))?distBrg(me,t):null;
+  el.innerHTML=`<b>${esc(t.id)}</b> ${esc(t.what)}${db?`<br>Target is ${fmtDist(db.d)} ${dir16(db.b)} of you (recon coordinates are approximate).`:''}`; el.classList.remove('hide');
+}
+async function openReconPdf(){
+  const d=DOCS.find(x=>x.community===$('#t_comm').value); if(!d) return;
+  const url=URL.createObjectURL(d.blob);
+  const w=window.open(url,'_blank');
+  if(!w){ const a=document.createElement('a'); a.href=url; a.download=d.name; document.body.appendChild(a); a.click(); a.remove(); }
+  setTimeout(()=>URL.revokeObjectURL(url),120000);
+}
+async function clearTargets(){
+  const comm=$('#t_comm').value; if(!comm) return;
+  const n=TG.filter(t=>t.community===comm&&t.status!=='open').length;
+  if(!confirm(`Remove the ${comm} targets and recon PDF from this device?${n?`\n${n} target(s) have a "no mark found" note. Export first so those notes are kept.`:''}`)) return;
+  for(const t of TG.filter(t=>t.community===comm)) await dbDel('targets',t.key);
+  for(const d of DOCS.filter(d=>d.community===comm)) await dbDel('docs',d.key);
+  await loadTargets(); fillTargetComms(); renderTargets(); fillTargetSelect();
+}
+function targetsTabOn(on){
+  if(on){ renderTargets();
+    window._tT=window._tT||setInterval(()=>{ if($('#tab-targets').classList.contains('on')) renderTargets(); },3000);
+  }
+}
+
+/* ---------------- Form ---------------- */
+let editing=null; // record being edited
+function fillCommunities(){
+  $('#f_community').innerHTML='<option value="">— choose —</option>'+COMMUNITIES.map(c=>`<option>${c}</option>`).join('')+'<option value="other">Other…</option>';
+}
+function resetForm(keepContext=true){
+  const keep={c:$('#f_community').value,co:$('#f_community_other').value,ev:$('#f_event').value,env:radio('env')};
+  $$('#tab-new input:not([type=radio]):not([type=file]), #tab-new textarea').forEach(i=>i.value='');
+  $('#f_hwmtype').value=''; $('#f_quality').value=''; $('#f_source').selectedIndex=0; $('#f_conf').value='Medium';
+  setRadio('disposition','Surveyed'); setRadio('pointtype','HWM'); setRadio('elevlevel','On ground'); setRadio('water','Still Water'); setRadio('mu','NO'); setRadio('muunits','Feet');
+  if(keepContext){ $('#f_community').value=keep.c; $('#f_community_other').value=keep.co; $('#f_event').value=keep.ev; setRadio('env',keep.env||'Riverine'); }
+  $('#f_point').value=S.nextPoint;
+  formPhotos=[]; renderThumbs(); pos=null; renderPos(); editing=null;
+  if(window.TG){ fillTargetSelect(); $('#f_target').value=''; showTargetInfo(); }
+  $('#editBanner').classList.add('hide'); $('#btnCancelEdit').classList.add('hide'); $('#btnSave').textContent='Save HWM';
+  syncConditional();
+}
+function syncConditional(){
+  const d=radio('disposition'); $('#wrap_flag').classList.toggle('hide',d==='Surveyed');
+  $('#muFields').classList.toggle('hide',radio('mu')!=='YES');
+  $('#f_community_other').classList.toggle('hide',$('#f_community').value!=='other');
+  $('#f_hwmtype_other').classList.toggle('hide',$('#f_hwmtype').value!=='other');
+}
+function piiCheck(){
+  const t=$('#f_notes').value;
+  const flag=/\b(\d{3}[-.\s]?\d{4})\b/.test(t)||/\b(Mr|Mrs|Ms|Miss|Dr)\.?\s+[A-Z]/.test(t)||/\b[A-Z][a-z]+\s+[A-Z][a-z]+'s\s+(house|home|place)/.test(t);
+  $('#piiWarn').classList.toggle('hide',!flag);
+}
+function collect(){
+  const community=$('#f_community').value==='other'?$('#f_community_other').value.trim():$('#f_community').value;
+  return {
+    community, event_basis:$('#f_event').value, disposition:radio('disposition'),
+    point_number:parseInt($('#f_point').value)||null, flag_id:$('#f_flag').value.trim(),
+    hwm_type:$('#f_hwmtype').value, hwm_type_other:$('#f_hwmtype_other').value.trim(),
+    point_type:radio('pointtype'), feature_name:$('#f_feature').value.trim(), elevated_level:radio('elevlevel'),
+    environment:radio('env'), water_condition:radio('water'), quality:$('#f_quality').value,
+    source:$('#f_source').value, confidence:$('#f_conf').value,
+    measure_up:radio('mu'), mu_height:parseFloat($('#f_muh').value), mu_units:radio('muunits'),
+    mu_reference:$('#f_muref').value, mu_method:$('#f_mumethod').value,
+    notes:$('#f_notes').value.trim(), target_id:$('#f_target').value||''
+  };
+}
+async function saveRecord(){
+  if(!S.team||!S.observer){ toast('Set Team ID and initials on the Setup tab first'); switchTab('setup'); return; }
+  const r=collect(); const miss=[];
+  if(!r.community) miss.push('community'); if(!r.hwm_type) miss.push('HWM type'); if(!r.quality) miss.push('quality');
+  if(!formPhotos.length) miss.push('photo');
+  if(r.measure_up==='YES'&&isNaN(r.mu_height)) miss.push('measure-up height');
+  if(r.disposition!=='Surveyed'&&!r.flag_id) miss.push('flag ID');
+  if(miss.length){ toast('Missing: '+miss.join(', '),4000); return; }
+  if(!pos && fixFresh()) capturePos();
+  if(!pos){ const g=formPhotos.find(p=>p.lat!=null); if(g){ pos={src:'Photo GPS',lat:g.lat,lon:g.lon,acc:null,time:g.taken}; } }
+  if(!pos && !confirm('No location (phone or photo). Save without a position?')) return;
+  if(!$('#piiWarn').classList.contains('hide') && !confirm('The notes may contain a name or phone number. Save anyway?')) return;
+  const now=new Date().toISOString();
+  const rec=editing?{...editing,...r}:{...r, id:`${S.team}-${now.slice(0,10).replace(/-/g,'')}-${r.point_number??Date.now()}-${Math.random().toString(36).slice(2,5)}`,
+    created:now, team:S.team, observer:S.observer, project:S.project, app_version:APP_VERSION, exported:false};
+  rec.modified=now; rec.pos=pos||null;
+  // photos
+  const keepIds=formPhotos.map(p=>p.id);
+  for(const p of formPhotos) if(!p.isNew){ const o=await dbGet('photos',p.id); if(o&&o.hdgSrc!=='photo'&&(o.hdg??null)!==(p.hdg??null)) await dbPut('photos',{...o,hdg:p.hdg??null,hdgRef:p.hdgRef||null,hdgSrc:p.hdgSrc||null}); }
+  for(const p of formPhotos) if(p.isNew) await dbPut('photos',{id:p.id,rec:rec.id,blob:p.blob,orig:p.orig?new Blob([await p.orig.arrayBuffer()],{type:p.orig.type||'image/jpeg'}):null,origName:p.orig?.name||'',hdg:p.hdg??null,hdgRef:p.hdgRef||null,hdgSrc:p.hdgSrc||null,lat:p.lat??null,lon:p.lon??null,taken:p.taken||null});
+  if(editing) for(const pid of (editing.photos||[])) if(!keepIds.includes(pid)) await dbDel('photos',pid);
+  rec.photos=keepIds;
+  if(editing) rec.exported=false;
+  await dbPut('records',rec);
+  if(!editing && r.point_number && r.point_number>=S.nextPoint){ S.nextPoint=r.point_number+1; await saveSettings(); }
+  toast(editing?'Updated':'Saved HWM '+(r.point_number??''));
+  resetForm(true); renderRecords();
+}
+async function editRecord(id){
+  const rec=await dbGet('records',id); if(!rec) return;
+  resetForm(false); editing=rec; switchTab('new');
+  if(COMMUNITIES.includes(rec.community)) $('#f_community').value=rec.community; else { $('#f_community').value='other'; $('#f_community_other').value=rec.community; }
+  $('#f_event').value=rec.event_basis; setRadio('disposition',rec.disposition); $('#f_point').value=rec.point_number??''; $('#f_flag').value=rec.flag_id||'';
+  $('#f_hwmtype').value=rec.hwm_type; $('#f_hwmtype_other').value=rec.hwm_type_other||''; setRadio('pointtype',rec.point_type);
+  $('#f_feature').value=rec.feature_name||''; setRadio('elevlevel',rec.elevated_level); setRadio('env',rec.environment); setRadio('water',rec.water_condition);
+  $('#f_quality').value=rec.quality; $('#f_source').value=rec.source; $('#f_conf').value=rec.confidence;
+  setRadio('mu',rec.measure_up); $('#f_muh').value=isNaN(rec.mu_height)?'':rec.mu_height; setRadio('muunits',rec.mu_units); $('#f_muref').value=rec.mu_reference; $('#f_mumethod').value=rec.mu_method;
+  $('#f_notes').value=rec.notes||'';
+  fillTargetSelect(); $('#f_target').value=rec.target_id||''; showTargetInfo();
+  formPhotos=[]; for(const pid of rec.photos||[]){ const p=await dbGet('photos',pid); if(p) formPhotos.push({id:pid,blob:p.blob,url:URL.createObjectURL(p.blob),isNew:false,hdg:p.hdg??null,hdgRef:p.hdgRef||null,hdgSrc:p.hdgSrc||(p.hdg!=null?'photo':null),lat:p.lat??null,lon:p.lon??null,taken:p.taken}); }
+  renderThumbs(); pos=rec.pos||null; renderPos(); editing=rec;
+  $('#editBanner').textContent=`Editing ${rec.community} pt ${rec.point_number??''}. Press “Use my location” only if you want to replace the position.`; $('#editBanner').classList.remove('hide');
+  $('#btnCancelEdit').classList.remove('hide'); $('#btnSave').textContent='Save changes'; syncConditional(); piiCheck();
+}
+async function deleteRecord(id){
+  if(!confirm('Delete this HWM and its photos from this device?')) return;
+  const rec=await dbGet('records',id); for(const pid of rec.photos||[]) await dbDel('photos',pid);
+  await dbDel('records',id); renderRecords(); toast('Deleted');
+}
+
+/* ---------------- Records list ---------------- */
+async function renderRecords(){
+  const recs=(await dbAll('records')).sort((a,b)=>b.created.localeCompare(a.created)); window._recCache=recs;
+  $('#recCount').textContent=`(${recs.length})`;
+  $('#recList').innerHTML=recs.length?recs.map(r=>{
+    const g=r.pos||r.gnss||null; const q=!g?'none':(g.acc!=null&&g.acc<=15?'q4':'dev');
+    const ql=!g?'NO POS':(g.src||g.method||'GPS')+(g.acc!=null?' ±'+hDisp(g.acc):'');
+    return `<div class="rec"><div class="meta"><div class="t">${esc(r.community)} · pt ${r.point_number??'—'} · ${esc(r.hwm_type==='other'?r.hwm_type_other:r.hwm_type)}</div>
+      <div class="s"><span class="tag ${q}">${ql}</span><span class="tag">${esc(r.disposition)}</span>${r.target_id?`<span class="tag">${esc(r.target_id)}</span>`:''}<span class="tag">${esc(r.quality)}</span>${r.exported?'<span class="tag">exported</span>':''}
+      ${r.created.slice(0,16).replace('T',' ')}Z · ${(r.photos||[]).length} photo(s)</div></div>
+      <button class="btn" data-edit="${r.id}">Edit</button><button class="btn danger" data-del="${r.id}" aria-label="Delete">✕</button></div>`;}).join('')
+    :'<p style="color:var(--muted)">No HWMs saved on this device yet.</p>';
+  $$('[data-edit]').forEach(b=>b.onclick=()=>editRecord(b.dataset.edit));
+  $$('[data-del]').forEach(b=>b.onclick=()=>deleteRecord(b.dataset.del));
+  storageInfo();
+}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function storageInfo(){
+  if(!navigator.storage?.estimate) return; const e=await navigator.storage.estimate(); const p=navigator.storage.persisted?await navigator.storage.persisted():false;
+  const n=$('#storeInfo'); n.classList.remove('hide'); n.className='note '+(p?'ok':'warn');
+  n.textContent=`Storage used ${(e.usage/1e6).toFixed(1)} MB of ${(e.quota/1e9).toFixed(1)} GB. ${p?'Protected from automatic clean-up.':'Not protected: export often.'}`;
+}
+
+/* ---------------- Export (zip, no compression) ---------------- */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function makeZip(files){
+  const enc=new TextEncoder(); const chunks=[]; const central=[]; let off=0;
+  const d=new Date(); const dt=((d.getFullYear()-1980)<<25)|((d.getMonth()+1)<<21)|(d.getDate()<<16)|(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+  for(const f of files){
+    const name=enc.encode(f.name); const data=f.data; const crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30)); h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true); h.setUint16(8,0,true);
+    h.setUint32(10,dt,true); h.setUint32(14,crc,true); h.setUint32(18,data.length,true); h.setUint32(22,data.length,true); h.setUint16(26,name.length,true); h.setUint16(28,0,true);
+    chunks.push(new Uint8Array(h.buffer),name,data);
+    const c=new DataView(new ArrayBuffer(46)); c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true); c.setUint16(10,0,true);
+    c.setUint32(12,dt,true); c.setUint32(16,crc,true); c.setUint32(20,data.length,true); c.setUint32(24,data.length,true); c.setUint16(28,name.length,true);
+    c.setUint32(42,off,true); central.push(new Uint8Array(c.buffer),name);
+    off+=30+name.length+data.length;
+  }
+  const cdSize=central.reduce((a,b)=>a+b.length,0);
+  const e=new DataView(new ArrayBuffer(22)); e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true); e.setUint32(12,cdSize,true); e.setUint32(16,off,true);
+  return new Blob([...chunks,...central,new Uint8Array(e.buffer)],{type:'application/zip'});
+}
+const CSV_COLS=['id','project','team','observer','community','event_basis','disposition','point_number','flag_id','hwm_type','hwm_type_other',
+ 'point_type','feature_name','elevated_level','environment','water_condition','quality','source','confidence',
+ 'measure_up','mu_height','mu_units','mu_reference','mu_method','notes','target_id',
+ 'pos_source','lat','lon','pos_accuracy_m','pos_time','photo_files','photo_directions','created','modified','app_version'];
+function flat(r,photoNames){
+  const g=r.pos||{};
+  return {...r,pos_source:g.src||'',lat:g.lat?.toFixed(7),lon:g.lon?.toFixed(7),pos_accuracy_m:g.acc!=null?Math.round(g.acc):'',pos_time:g.time||'',
+   mu_height:isNaN(r.mu_height)?'':r.mu_height,photo_files:photoNames.join(';')};
+}
+const csvCell=v=>{ if(v==null) return ''; const s=String(v); return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+async function doExport(onlyNew){
+  const withOrig=$('#exOrig').checked;
+  let recs=(await dbAll('records')).sort((a,b)=>a.created.localeCompare(b.created));
+  if(onlyNew) recs=recs.filter(r=>!r.exported);
+  if(!recs.length){ toast('Nothing to export'); return; }
+  toast('Building export…');
+  const enc=new TextEncoder(); const files=[]; const rows=[]; const feats=[];
+  for(const r of recs){
+    const names=[], hdgs=[];
+    for(let i=0;i<(r.photos||[]).length;i++){ const p=await dbGet('photos',r.photos[i]); if(!p) continue;
+      const stem=`${r.team}_${(r.community||'X').replace(/\W+/g,'')}_pt${r.point_number??'NA'}_${i+1}`; const nm=`photos/${stem}.jpg`; names.push(nm);
+      const cap=await captioned(p.blob,captionText(r,p));
+      files.push({name:nm,data:new Uint8Array(await cap.arrayBuffer())});
+      hdgs.push(p.hdg==null?'':`${photoDirLabel(p)} (${Math.round(p.hdg)}° ${String(p.hdgRef||'T').toUpperCase().startsWith('M')?'mag':'true'})`);
+      if(withOrig&&p.orig){ const ext=((p.origName||'').match(/\.\w+$/)||['.jpg'])[0].toLowerCase();
+        files.push({name:`INTERNAL_originals_with_metadata/${stem}_orig${ext}`,data:new Uint8Array(await p.orig.arrayBuffer())}); } }
+    const f=flat(r,names); f.photo_directions=hdgs.join(';'); rows.push(CSV_COLS.map(c=>csvCell(f[c])).join(','));
+    const props={}; CSV_COLS.forEach(c=>props[c]=f[c]??null);
+    feats.push({type:'Feature',geometry:r.pos?.lat!=null?{type:'Point',coordinates:[+r.pos.lon.toFixed(7),+r.pos.lat.toFixed(7)]}:null,properties:props});
+  }
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,13)+'Z'; const base=`HWM_${S.team||'X'}_${stamp}`;
+  files.unshift({name:`${base}_records.csv`,data:enc.encode('﻿'+CSV_COLS.join(',')+'\r\n'+rows.join('\r\n')+'\r\n')});
+  files.push({name:`${base}_records.geojson`,data:enc.encode(JSON.stringify({type:'FeatureCollection',crs_note:'WGS84 phone GPS, approximate locator only; surveyed coordinates are added in the office',features:feats},null,1))});
+  files.push({name:`${base}_backup.json`,data:enc.encode(JSON.stringify({app:'JOA HWM Field',version:APP_VERSION,exported:new Date().toISOString(),settings:S,records:recs},null,1))});
+  const allT=await dbAll('targets');
+  if(allT.length){
+    const allR=await dbAll('records'); const TC=['community','id','priority','target','lat_wgs84','lon_wgs84','status','hwm_points','note','status_time','status_by','source','what_to_survey'];
+    const trows=allT.sort((a,b)=>(a.community+a.id).localeCompare(b.community+b.id,undefined,{numeric:true})).map(t=>{
+      const hw=allR.filter(r=>r.target_id===t.id&&r.community===t.community).map(r=>r.point_number);
+      const st=hw.length?'HWM collected':({none:'No mark found',skip:'Skipped'}[t.status]||'Not visited');
+      return [t.community,t.id,t.priority,t.name,isNaN(t.lat)?'':t.lat,isNaN(t.lon)?'':t.lon,st,hw.join(';'),t.statusNote,t.statusTime,t.statusBy,t.source,t.what].map(csvCell).join(','); });
+    files.push({name:`${base}_target_status.csv`,data:enc.encode('\ufeff'+TC.join(',')+'\r\n'+trows.join('\r\n')+'\r\n')});
+  }
+  const blob=makeZip(files); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=base+'.zip';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
+  for(const r of recs){ r.exported=true; await dbPut('records',r); }
+  renderRecords(); toast(`Exported ${recs.length} HWM(s) → ${base}.zip`,4000);
+}
+
+/* ---------------- Tabs & wiring ---------------- */
+function switchTab(t){ $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t)); $$('main section').forEach(s=>s.classList.toggle('on',s.id==='tab-'+t));
+  if(t==='records') renderRecords(); if(t==='setup') devInfo(); targetsTabOn(t==='targets'); if(t==='new') { fillTargetSelect(); } window.scrollTo(0,0); }
+function devInfo(){
+  $('#devinfo').innerHTML=`<b>App</b><span>${APP_VERSION}</span><b>Location</b><span>${navigator.geolocation?'Available':'NOT available'}</span>
+  <b>Offline</b><span>${'serviceWorker' in navigator&&navigator.serviceWorker.controller?'Installed for offline use':'Not yet cached (open once with signal)'}</span>
+  <b>Browser</b><span style="word-break:break-all">${esc(navigator.userAgent)}</span>`;
+}
+async function init(){
+  await openDB(); await loadSettings(); await loadTargets(); window.TG=TG; fillCommunities(); settingsToForm(); resetForm(false); renderRecords(); fillTargetComms(); startGPS();
+  $('#t_import').onchange=importRecon; $('#t_comm').onchange=renderTargets; $('#t_hideDone').onchange=renderTargets; $('#t_byDist').onchange=renderTargets;
+  $('#btnReconPdf').onclick=openReconPdf; $('#btnClearTargets').onclick=clearTargets;
+  $('#f_community').addEventListener('change',fillTargetSelect); $('#f_community_other').addEventListener('input',fillTargetSelect); $('#f_target').onchange=showTargetInfo;
+  $$('nav button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+  $('#btnPos').onclick=capturePos;
+  $('#f_photo').onchange=onPhotos; $('#f_photo_gal').onchange=onPhotos; $('#btnSave').onclick=saveRecord; $('#btnCancelEdit').onclick=()=>resetForm(true);
+  $('#f_notes').oninput=piiCheck;
+  document.addEventListener('change',e=>{ if(e.target.closest('#tab-new')) syncConditional(); });
+  $('#btnSaveSettings').onclick=async()=>{ formToSettings(); await saveSettings(); settingsToForm(); $('#f_point').value=S.nextPoint; toast('Setup saved'); };
+  $('#btnExport').onclick=()=>doExport(false); $('#btnExportNew').onclick=()=>doExport(true);
+  $('#btnWipe').onclick=async()=>{ const n=(await dbAll('records')).length; if(prompt(`Type DELETE to remove all ${n} records and photos from this device. Export first!`)!=='DELETE') return;
+    await dbClear('records'); await dbClear('photos'); renderRecords(); toast('Device cleared'); };
+  if(navigator.storage?.persist) navigator.storage.persist().then(storageInfo);
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if(!S.team) switchTab('setup');
+}
+init();
+</script>
+</body>
+</html>
