@@ -360,7 +360,7 @@ small.mono{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
    JOA HWM Field — offline HWM documentation (form, photos, phone GPS).
    Surveyed coordinates and elevations are added in the office.
    ===================================================================== */
-const APP_VERSION = '1.1.3';
+const APP_VERSION = '1.1.4';
 const FT = 0.3048; // international foot; office script handles US survey foot
 const COMMUNITIES = ['Glennallen','Crooked Creek','Ruby','Kotlik','Newtok','Mertarvik','Nunapitchuk','Marshall',
   'Pilot Station','Mountain Village','Akiak','Napaskiak','Circle','Bethel'];
@@ -946,7 +946,17 @@ async function ccSave(){
   await dbPut('checks',c); toast('Survey point saved'); ccClose(); renderChecks();
   if($('#tab-targets').classList.contains('on')) renderTargets();
 }
+/* Records saved by v1.1.0's "Log control check" form become survey points (nothing is dropped; the old fields stay on the record). */
+async function migrateChecks(){
+  for(const c of await dbAll('checks')){ if(c.point!=null) continue;
+    const extra=[c.purpose&&`logged as control check: ${c.purpose}`, c.condition&&c.condition!=='Good'&&`mark ${c.condition.toLowerCase()}`,
+      c.ant_height!=null&&`antenna/rod ${c.ant_height} ${c.units||''}`.trim(), c.measured!=null&&`measured ${c.measured} ${c.units||''}`.trim(), c.dc_point&&!c.mark_from_list?'':null].filter(Boolean).join('; ');
+    c.point=c.dc_point||c.mark||c.id; c.type=c.purpose==='Base setup'?'Base setup':(c.mark_from_list?'Benchmark / control':'Other shot');
+    c.mark=c.mark_from_list?c.mark:''; c.notes=[c.notes,extra&&`(${extra})`].filter(Boolean).join(' ');
+    if(c.pos&&!c.pos.src) c.pos.src='Phone GPS'; c.photos=c.photos||[]; c.migratedFrom='1.1.0 control check'; await dbPut('checks',c); }
+}
 async function renderChecks(){
+  await migrateChecks();
   const cs=(await dbAll('checks')).filter(c=>c.point!=null).sort((a,b)=>b.created.localeCompare(a.created)); window._ccCache=cs;
   $('#ccCount').textContent=`(${cs.length})`;
   $('#ccList').innerHTML=cs.length?cs.map(c=>{ const g=c.pos; const q=!g?'none':(g.acc!=null&&g.acc<=15?'q4':'dev');
@@ -998,7 +1008,7 @@ async function doExport(onlyNew){
   const withOrig=$('#exOrig').checked;
   let recs=(await dbAll('records')).sort((a,b)=>a.created.localeCompare(b.created));
   if(onlyNew) recs=recs.filter(r=>!r.exported);
-  let ccs=(await dbAll('checks')).filter(c=>c.point!=null).sort((a,b)=>a.created.localeCompare(b.created)); if(onlyNew) ccs=ccs.filter(c=>!c.exported);
+  await migrateChecks(); let ccs=(await dbAll('checks')).filter(c=>c.point!=null).sort((a,b)=>a.created.localeCompare(b.created)); if(onlyNew) ccs=ccs.filter(c=>!c.exported);
   if(!recs.length&&!ccs.length){ toast('Nothing to export'); return; }
   toast('Building export…');
   const enc=new TextEncoder(); const files=[]; const rows=[]; const feats=[];
