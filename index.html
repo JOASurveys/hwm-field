@@ -28,7 +28,8 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui
 header{position:sticky;top:0;z-index:10;background:var(--brand);color:var(--brand-ink);padding:8px 12px calc(8px) 12px}
 header .row{display:flex;align-items:center;gap:8px;justify-content:space-between}
 header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
-#fixpill{font-weight:700;font-size:14px;padding:4px 10px;border-radius:999px;background:#444;color:#fff;white-space:nowrap}
+#cmppill{font-weight:700;font-size:14px;padding:4px 10px;border-radius:999px;background:#c0392b;color:#fff;white-space:nowrap;cursor:pointer}#cmppill.on{background:#1e9e4a}
+#fixpill{cursor:pointer;font-weight:700;font-size:14px;padding:4px 10px;border-radius:999px;background:#444;color:#fff;white-space:nowrap}
 #fixpill.q4{background:#1e9e4a}#fixpill.q5{background:#d08a00}#fixpill.q1,#fixpill.q2{background:#c0392b}#fixpill.sim{outline:2px dashed #fff}
 #fixline{font:13px/1.3 ui-monospace,Consolas,monospace;opacity:.92;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 nav{display:flex;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:58px;z-index:9}
@@ -88,7 +89,7 @@ small.mono{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
 </head>
 <body>
 <header>
-  <div class="row"><h1>JOA HWM Field</h1><span id="fixpill">GPS…</span></div>
+  <div class="row"><h1>JOA HWM Field</h1><span style="display:flex;gap:6px"><span id="cmppill" role="button" tabindex="0">Compass off</span><span id="fixpill" role="button" tabindex="0">GPS…</span></span></div>
   <div id="fixline">Waiting for phone location</div>
 </header>
 <nav>
@@ -359,7 +360,7 @@ small.mono{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
    JOA HWM Field — offline HWM documentation (form, photos, phone GPS).
    Surveyed coordinates and elevations are added in the office.
    ===================================================================== */
-const APP_VERSION = '1.1.1';
+const APP_VERSION = '1.1.2';
 const FT = 0.3048; // international foot; office script handles US survey foot
 const COMMUNITIES = ['Glennallen','Crooked Creek','Ruby','Kotlik','Newtok','Mertarvik','Nunapitchuk','Marshall',
   'Pilot Station','Mountain Village','Akiak','Napaskiak','Circle','Bethel'];
@@ -420,14 +421,22 @@ let pos=null;       // position attached to the form
 function mPerDeg(lat){ const p=lat*Math.PI/180;
   return {n:111132.954-559.822*Math.cos(2*p)+1.175*Math.cos(4*p), e:111412.84*Math.cos(p)-93.5*Math.cos(3*p)}; }
 function hDisp(m){ return S.units==='ft'?Math.round(m/FT)+' ft':Math.round(m)+' m'; }
+let gpsWatch=null, gpsTimer=null;
 function startGPS(){
   if(!navigator.geolocation){ $('#fixpill').textContent='NO GPS'; $('#fixline').textContent='This device has no location service'; return; }
-  navigator.geolocation.watchPosition(p=>{ lastFix={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,t:Date.now()}; renderFix();
+  if(gpsWatch!=null) navigator.geolocation.clearWatch(gpsWatch);
+  gpsWatch=navigator.geolocation.watchPosition(p=>{ lastFix={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,t:Date.now()}; renderFix();
       if($('#tab-targets').classList.contains('on')) renderTargets(); },
-    e=>{ $('#fixpill').textContent='NO GPS'; $('#fixline').textContent='Location: '+e.message; },
+    e=>{ $('#fixpill').textContent='NO GPS'; $('#fixpill').className='q1';
+      $('#fixline').textContent=e.code===1?'Location blocked: tap NO GPS to ask again (see guide if it keeps happening)':'Location: '+e.message+' (tap to retry)'; },
     {enableHighAccuracy:true,maximumAge:5000,timeout:60000});
-  setInterval(renderFix,5000);
+  if(!gpsTimer) gpsTimer=setInterval(renderFix,5000);
 }
+/* Compass pill: iPhone forgets Motion & Orientation permission when the app is closed, so ask with one tap per session. */
+function renderCmp(){ const el=$('#cmppill'); if(!el) return; const live=CMP.on&&CMP.mag!=null&&Date.now()-CMP.t<3000;
+  el.className=live?'on':''; el.textContent=live?'🧭 '+dir16((CMP.mag+declHere()+360)%360):(CMP.on?'🧭 …':'Compass off'); }
+async function cmpTap(){ const ok=await startCompass(); if(!ok) toast('Compass blocked. Allow Motion & Orientation access (see guide).',4000); setTimeout(renderCmp,800); }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ startGPS(); renderCmp(); } });
 const fixFresh=()=>lastFix&&Date.now()-lastFix.t<60000;
 function renderFix(){
   const pill=$('#fixpill');
@@ -1046,7 +1055,7 @@ function devInfo(){
   <b>Browser</b><span style="word-break:break-all">${esc(navigator.userAgent)}</span>`;
 }
 async function init(){
-  await openDB(); await loadSettings(); await loadTargets(); window.TG=TG; fillCommunities(); settingsToForm(); resetForm(false); renderRecords(); renderChecks(); fillTargetComms(); startGPS();
+  await openDB(); await loadSettings(); await loadTargets(); window.TG=TG; fillCommunities(); settingsToForm(); resetForm(false); renderRecords(); renderChecks(); fillTargetComms(); startGPS(); $('#fixpill').onclick=()=>{ $('#fixline').textContent='Asking for location…'; startGPS(); }; $('#cmppill').onclick=cmpTap; setInterval(renderCmp,1000);
   $('#t_import').onchange=importRecon; $('#t_comm').onchange=renderTargets; $('#t_hideDone').onchange=renderTargets; $('#t_byDist').onchange=renderTargets;
   $('#btnReconPdf').onclick=openReconPdf; $('#btnClearTargets').onclick=clearTargets;
   $('#f_community').addEventListener('change',fillTargetSelect); $('#f_community_other').addEventListener('input',fillTargetSelect); $('#f_target').onchange=showTargetInfo;
