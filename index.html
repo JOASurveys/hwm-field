@@ -73,7 +73,7 @@ textarea{min-height:90px}
 .tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 7px;border-radius:5px;margin-right:4px;background:var(--line)}
 .tag.q4{background:var(--ok-bg);color:var(--ok)}.tag.q5,.tag.dev{background:var(--warn-bg);color:var(--warn)}.tag.none{background:var(--bad-bg);color:var(--bad)}
 .pri{display:inline-block;min-width:30px;text-align:center;font-weight:800;font-size:12px;padding:2px 6px;border-radius:5px;color:#fff}
-.pri.p1{background:#c0392b}.pri.p2{background:#d68400}.pri.p3{background:#7b8794}
+.pri.p1{background:#c0392b}.pri.p2{background:#d68400}.pri.p3{background:#7b8794}.pri.p9{background:#0b3d6e}
 .tgt{border-bottom:1px solid var(--line);padding:10px 0}.tgt:last-child{border-bottom:0}
 .tgt .hd{display:flex;gap:8px;align-items:baseline}.tgt .nm{font-weight:650;flex:1}
 .tgt .dist{font:700 14px ui-monospace,Consolas,monospace;white-space:nowrap}
@@ -327,7 +327,7 @@ small.mono{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
    JOA HWM Field — offline HWM documentation (form, photos, phone GPS).
    Surveyed coordinates and elevations are added in the office.
    ===================================================================== */
-const APP_VERSION = '1.0.3';
+const APP_VERSION = '1.0.4';
 const FT = 0.3048; // international foot; office script handles US survey foot
 const COMMUNITIES = ['Glennallen','Crooked Creek','Ruby','Kotlik','Newtok','Mertarvik','Nunapitchuk','Marshall',
   'Pilot Station','Mountain Village','Akiak','Napaskiak','Circle','Bethel'];
@@ -529,9 +529,10 @@ function captionText(r,p){
 let TG=[], DOCS=[];
 function commFromFile(name){
   let b=name.split('/').pop().replace(/\.(csv|kml|pdf)$/i,'');
-  b=b.replace(/_HWM_Targets.*$/i,'').replace(/_APRFC_Summary.*$/i,'').replace(/_(Desktop_)?Recon.*$/i,'').replace(/_\d{8}$/,'');
-  const nm=b.replace(/[_]+/g,' ').trim();
-  return COMMUNITIES.find(c=>c.toLowerCase()===nm.toLowerCase()) || (nm.toLowerCase()==='glenallen'?'Glennallen':nm);
+  b=b.replace(/_HWM_Targets.*$/i,'').replace(/_APRFC_Summary.*$/i,'').replace(/_Survey(Points|Plan).*$/i,'').replace(/_(Desktop_)?Recon.*$/i,'').replace(/_\d{8}$/,'');
+  const nm=b.replace(/[_]+/g,' ').trim(); const key=x=>x.toLowerCase().replace(/[^a-z]/g,'');
+  // recon tool files use CamelCase stems (CrookedCreek_SurveyPoints_RevA_<date>.csv); older files use Crooked_Creek_HWM_Targets.csv
+  return COMMUNITIES.find(c=>key(c)===key(nm)) || (key(nm)==='glenallen'?'Glennallen':nm);
 }
 function parseCSV(text){
   const rows=[]; let row=[], f='', q=false;
@@ -544,9 +545,11 @@ function parseCSV(text){
 }
 const pick=(o,...ks)=>{ for(const k of ks){ const hit=Object.keys(o).find(x=>x.toLowerCase()===k.toLowerCase()); if(hit&&o[hit]!=='') return o[hit]; } return ''; };
 function targetsFromCSV(text,comm){
-  return parseCSV(text).map(o=>({community:comm, id:pick(o,'ID','Target_ID','Name'), priority:parseInt(pick(o,'Priority'))||3,
-    name:pick(o,'Target','Description','Name'), lat:parseFloat(pick(o,'Lat_WGS84','Latitude','Lat','Y')), lon:parseFloat(pick(o,'Lon_WGS84','Longitude','Lon','Long','X')),
-    source:pick(o,'Source'), what:pick(o,'What_to_survey','What to survey','Notes')})).filter(t=>t.id||t.name);
+  // reads both the older <Community>_HWM_Targets.csv and the recon tool's <Community>_SurveyPoints_Rev?_<date>.csv
+  return parseCSV(text).map(o=>{ const pr=pick(o,'Priority'); const bm=/^BM$/i.test(pr)||/benchmark/i.test(pick(o,'Type'));
+    return {community:comm, id:pick(o,'ID','Target_ID','Name'), priority:bm?9:(parseInt(pr)||3), bm,
+    name:pick(o,'Target','Point','Description','Name'), lat:parseFloat(pick(o,'Lat_WGS84','Latitude','Lat','Y')), lon:parseFloat(pick(o,'Lon_WGS84','Longitude','Lon','Long','X')),
+    source:[pick(o,'Type'),pick(o,'Source')].filter(Boolean).join(' · '), what:pick(o,'What_to_survey','What to survey','Notes')}; }).filter(t=>t.id||t.name);
 }
 function targetsFromKML(text,comm){
   const x=new DOMParser().parseFromString(text,'application/xml'); const out=[];
@@ -585,7 +588,7 @@ async function importRecon(e){
   const byComm={}; const msgs=[];
   for(const f of files){ const c=commFromFile(f.name); (byComm[c]=byComm[c]||[]).push(f); }
   for(const [comm,fs] of Object.entries(byComm)){
-    const csv=fs.find(f=>/_targets.*\.csv$/i.test(f.name))||fs.find(f=>/\.csv$/i.test(f.name));
+    const csvs=fs.filter(f=>/\.csv$/i.test(f.name)).sort((a,b)=>b.name.localeCompare(a.name)); const csv=csvs.find(f=>/_SurveyPoints_/i.test(f.name))||csvs.find(f=>/_targets/i.test(f.name))||csvs[0];
     const kml=fs.find(f=>/\.kml$/i.test(f.name));
     let list=null;
     if(csv) list=targetsFromCSV(await csv.blob.text(),comm); else if(kml) list=targetsFromKML(await kml.blob.text(),comm);
@@ -595,7 +598,7 @@ async function importRecon(e){
       for(const id in old){ if(old[id].status==='open') await dbDel('targets',old[id].key); }  // dropped from recon, nothing recorded
       msgs.push(`${comm}: ${list.length} targets (${list.filter(t=>!isNaN(t.lat)).length} with coordinates)`);
     }
-    for(const pdf of fs.filter(f=>/\.pdf$/i.test(f.name))){
+    for(const pdf of fs.filter(f=>/\.pdf$/i.test(f.name)).sort((a,b)=>(/_SurveyPlan_/i.test(a.name)?1:0)-(/_SurveyPlan_/i.test(b.name)?1:0))){
       const nm=pdf.name.split('/').pop();
       for(const d of DOCS.filter(d=>d.community===comm)) await dbDel('docs',d.key);
       await dbPut('docs',{key:comm+'|'+nm,community:comm,name:nm,blob:new Blob([await pdf.blob.arrayBuffer()],{type:'application/pdf'}),added:new Date().toISOString()});
@@ -633,7 +636,7 @@ function renderTargets(){
   $('#t_list').innerHTML=ts.length?ts.map(t=>{
     const done=t.hw.length||t.status!=='open';
     const st=t.hw.length?`<span class="tag q4">HWM ${t.hw.map(r=>r.point_number).join(', ')}</span>`:(t.status==='none'?'<span class="tag none">No mark found</span>':(t.status==='skip'?'<span class="tag">Skipped</span>':''));
-    return `<div class="tgt ${done?'done':''}"><div class="hd"><span class="pri p${t.priority}">P${t.priority}</span><span class="nm">${esc(t.id)} · ${esc(t.name)}</span>
+    return `<div class="tgt ${done?'done':''}"><div class="hd"><span class="pri p${t.priority}">${t.priority===9?'BM':'P'+t.priority}</span><span class="nm">${esc(t.id)}${t.name&&t.name!==t.id?' · '+esc(t.name):''}</span>
       <span class="dist">${t.db?fmtDist(t.db.d)+' '+dir16(t.db.b):(t.has?'':'<span style="color:var(--warn)">no coords</span>')}</span></div>
       <div class="what">${esc(t.what)}</div><div class="src">${esc(t.source)}${t.has?` · ${t.lat.toFixed(5)}, ${t.lon.toFixed(5)}`:' · location unknown, ask the community'}</div>
       ${t.statusNote?`<div class="src">Note: ${esc(t.statusNote)}</div>`:''}
@@ -659,7 +662,7 @@ function plotTargets(ts,me){
   const X=p=>W/2+(p.x-cx)*k, Y=p=>H/2-(p.y-cy)*k;
   // scale bar
   const nice=[10,20,50,100,200,500,1000,2000,5000,10000].find(v=>v*k>60)||10000;
-  const col={1:'#c0392b',2:'#d68400',3:'#7b8794'};
+  const col={1:'#c0392b',2:'#d68400',3:'#7b8794',9:'#0b3d6e'};
   let g=`<g fill="currentColor" font-family="system-ui,sans-serif">`;
   g+=`<line x1="${pad}" y1="${H-12}" x2="${pad+nice*k}" y2="${H-12}" stroke="currentColor" stroke-width="2"/><text x="${pad}" y="${H-17}" font-size="11">${nice>=1000?nice/1000+' km':nice+' m'}</text>`;
   g+=`<path d="M${W-20},12 l-6,16 h12 z" fill="currentColor"/><text x="${W-20}" y="42" font-size="11" text-anchor="middle">N</text>`;
@@ -689,7 +692,7 @@ async function markTarget(key){
 function fillTargetSelect(){
   const comm=$('#f_community').value==='other'?$('#f_community_other').value.trim():$('#f_community').value;
   const cur=$('#f_target').value;
-  const ts=TG.filter(t=>t.community===comm).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));
+  const ts=TG.filter(t=>t.community===comm&&t.priority!==9).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));
   $('#f_target').innerHTML='<option value="">— none —</option>'+ts.map(t=>`<option value="${esc(t.id)}">${esc(t.id)} · P${t.priority} · ${esc(t.name.slice(0,60))}</option>`).join('');
   if(ts.some(t=>t.id===cur)) $('#f_target').value=cur;
   $('#f_target').disabled=!ts.length; showTargetInfo();
