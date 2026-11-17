@@ -327,7 +327,7 @@ small.mono{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
    JOA HWM Field — offline HWM documentation (form, photos, phone GPS).
    Surveyed coordinates and elevations are added in the office.
    ===================================================================== */
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.3';
 const FT = 0.3048; // international foot; office script handles US survey foot
 const COMMUNITIES = ['Glennallen','Crooked Creek','Ruby','Kotlik','Newtok','Mertarvik','Nunapitchuk','Marshall',
   'Pilot Station','Mountain Village','Akiak','Napaskiak','Circle','Bethel'];
@@ -423,22 +423,54 @@ async function processPhoto(file){
   c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
   return await new Promise(r=>c.toBlob(r,'image/jpeg',0.85));
 }
+
+/* ---------------- Live compass (iPhone strips direction/GPS from photos taken in a web app) ----------------
+   Heading of the rear camera from the phone's compass, magnetic → true with the WMM2025 declination
+   (2026.9) of the nearest project community. */
+const DECL_PTS=[[62.109,-145.546,15.5],[61.87,-158.11,10.6],[64.739,-155.487,11.6],[63.034,-163.553,8.1],[60.943,-164.629,7.8],[60.817,-164.513,7.8],[60.896,-162.459,8.8],[61.878,-162.081,8.9],[61.939,-162.88,8.5],[62.086,-163.722,8.1],[60.912,-161.214,9.3],[60.708,-161.767,9.1],[65.826,-144.061,16.0],[60.792,-161.756,9.1],[61.218,-149.9,13.9]];
+function declHere(){ const m=myPos(); const la=m?m.lat:61.87, lo=m?m.lon:-158.11;
+  let best=null,bd=1e18; for(const [a,b,d] of DECL_PTS){ const dd=(a-la)**2+((b-lo)*Math.cos(la*Math.PI/180))**2; if(dd<bd){bd=dd;best=d;} } return best??0; }
+const CMP={on:false,mag:null,t:0,acc:null};
+function onOrient(e){
+  let h=null;
+  if(typeof e.webkitCompassHeading==='number'&&!isNaN(e.webkitCompassHeading)){ h=e.webkitCompassHeading; CMP.acc=e.webkitCompassAccuracy; }
+  else if(e.absolute&&e.alpha!=null&&e.beta!=null&&e.gamma!=null){ const r=Math.PI/180, a=e.alpha*r,b=e.beta*r,g=e.gamma*r;
+    const vx=-(Math.cos(a)*Math.sin(g)+Math.sin(a)*Math.sin(b)*Math.cos(g)), vy=-(Math.sin(a)*Math.sin(g)-Math.cos(a)*Math.sin(b)*Math.cos(g));
+    h=(Math.atan2(vx,vy)/r+360)%360; }
+  if(h!=null){ CMP.mag=h; CMP.t=Date.now(); }
+}
+async function startCompass(){   // must be called from a tap (iPhone asks permission once)
+  if(CMP.on) return true;
+  try{ if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){ if(await DeviceOrientationEvent.requestPermission()==='denied') return false; } }catch(e){ return false; }
+  window.addEventListener('deviceorientationabsolute',onOrient,true); window.addEventListener('deviceorientation',onOrient,true); CMP.on=true; return true;
+}
+async function compassNow(wait=1500){ const t0=Date.now(); while(Date.now()-t0<wait){ if(CMP.mag!=null&&CMP.t>=t0-300) break; await new Promise(r=>setTimeout(r,100)); }
+  return (CMP.mag!=null&&Date.now()-CMP.t<2000)?(CMP.mag+declHere()+360)%360:null; }
+async function compassForPhoto(i){
+  if(!await startCompass()){ toast('Compass not available. Allow Motion & Orientation access, or pick “Facing…”.',4000); return; }
+  const h=await compassNow(); if(h==null){ toast('No compass reading. Pick “Facing…” instead.',3500); return; }
+  const p=formPhotos[i]; p.hdg=Math.round(h); p.hdgRef='T'; p.hdgSrc='compass'; renderThumbs(); toast(`Facing ${dir16(h)} (${Math.round(h)}° true)`);
+}
 async function onPhotos(e){
+  const fromCamera=e.target.id==='f_photo';
   const files=[...e.target.files]; e.target.value='';
-  let noDir=0;
+  let noDir=0; const live=(fromCamera&&CMP.on)?await compassNow(1200):null;
   for(const f of files){ try{ const x=await readExif(f); const blob=await processPhoto(f);
       formPhotos.push({id:'p'+Date.now()+Math.random().toString(36).slice(2,7),blob,orig:f,url:URL.createObjectURL(blob),isNew:true,
         hdg:x.hdg??null,hdgRef:x.hdgRef||null,hdgSrc:x.hdg!=null?'photo':null,lat:x.lat??null,lon:x.lon??null,taken:x.taken||(f.lastModified?new Date(f.lastModified):new Date()).toISOString()});
-      if(x.hdg==null) noDir++;
+      if(x.hdg==null&&live!=null){ const p=formPhotos[formPhotos.length-1]; p.hdg=Math.round(live); p.hdgRef='T'; p.hdgSrc='compass'; }
+      else if(x.hdg==null) noDir++;
     }catch(err){ toast('Could not read photo'); } }
   renderThumbs();
   if(!pos){ const g=formPhotos.find(p=>p.lat!=null); if(fixFresh()) capturePos(); else if(g){ pos={src:'Photo GPS',lat:g.lat,lon:g.lon,acc:null,time:g.taken}; renderPos(); } }
-  if(noDir&&files.length) toast(noDir===files.length?'No direction in the photo(s). Pick “Facing…” under each photo.':`${noDir} photo(s) without a direction. Pick “Facing…” under it.`,3500);
+  if(noDir&&files.length) toast(noDir===files.length?'No direction in the photo(s). Tap 🧭 under the photo while pointing the phone the same way, or pick “Facing…”.':`${noDir} photo(s) without a direction. Tap 🧭 or pick “Facing…” under it.`,4500);
+  else if(live!=null) toast(`Direction from compass: ${dir16(live)} (${Math.round(live)}° true). Check it.`,3000);
 }
 function renderThumbs(){
-  $('#thumbs').innerHTML=formPhotos.map((p,i)=>`<figure><img src="${p.url}" alt="HWM photo ${i+1}">${p.hdg!=null?`<span style="position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.65);color:#fff;font:700 12px system-ui;padding:1px 5px;border-radius:4px">${photoDirLabel(p)}</span>`:''}<button data-i="${i}" aria-label="Remove photo">×</button>${p.hdgSrc==='photo'?'':`<select data-i="${i}" aria-label="Direction photo ${i+1} faces"><option value="">Facing…</option>${DIR16.map((d,k)=>`<option value="${k}"${p.hdg!=null&&dir16(p.hdg)===d?' selected':''}>${d}</option>`).join('')}</select>`}</figure>`).join('');
+  $('#thumbs').innerHTML=formPhotos.map((p,i)=>`<figure><img src="${p.url}" alt="HWM photo ${i+1}">${p.hdg!=null?`<span style="position:absolute;left:4px;top:72px;background:rgba(0,0,0,.65);color:#fff;font:700 12px system-ui;padding:1px 5px;border-radius:4px">${photoDirLabel(p)}</span>`:''}<button data-i="${i}" aria-label="Remove photo">×</button>${p.hdgSrc==='photo'?'':`<button type="button" class="cmp" data-c="${i}" aria-label="Set direction from compass" style="position:static;display:block;width:96px;height:auto;border-radius:6px;padding:4px;margin-top:4px;font-size:14px;background:#0b3d6e">🧭${p.hdgSrc==='compass'?' '+Math.round(p.hdg)+'°':''}</button><select data-i="${i}" aria-label="Direction photo ${i+1} faces"><option value="">Facing…</option>${DIR16.map((d,k)=>`<option value="${k}"${p.hdg!=null&&dir16(p.hdg)===d?' selected':''}>${d}</option>`).join('')}</select>`}</figure>`).join('');
   $('#photoCount').textContent=formPhotos.length?`${formPhotos.length} photo${formPhotos.length>1?'s':''}`:'';
-  $$('#thumbs button').forEach(b=>b.onclick=()=>{ formPhotos.splice(+b.dataset.i,1); renderThumbs(); });
+  $$('#thumbs button[data-i]').forEach(b=>b.onclick=()=>{ formPhotos.splice(+b.dataset.i,1); renderThumbs(); });
+  $$('#thumbs button[data-c]').forEach(b=>b.onclick=()=>compassForPhoto(+b.dataset.c));
   $$('#thumbs select').forEach(el=>el.onchange=()=>{ const p=formPhotos[+el.dataset.i]; if(el.value===''){ p.hdg=null; p.hdgRef=null; p.hdgSrc=null; } else { p.hdg=+el.value*22.5; p.hdgRef='T'; p.hdgSrc='manual'; } renderThumbs(); });
 }
 
@@ -889,7 +921,7 @@ async function init(){
   $('#f_community').addEventListener('change',fillTargetSelect); $('#f_community_other').addEventListener('input',fillTargetSelect); $('#f_target').onchange=showTargetInfo;
   $$('nav button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
   $('#btnPos').onclick=capturePos;
-  $('#f_photo').onchange=onPhotos; $('#f_photo_gal').onchange=onPhotos; $('#btnSave').onclick=saveRecord; $('#btnCancelEdit').onclick=()=>resetForm(true);
+  $('#f_photo').onchange=onPhotos; $('#f_photo').parentElement.addEventListener('click',()=>{ startCompass(); }); $('#f_photo_gal').onchange=onPhotos; $('#btnSave').onclick=saveRecord; $('#btnCancelEdit').onclick=()=>resetForm(true);
   $('#f_notes').oninput=piiCheck;
   document.addEventListener('change',e=>{ if(e.target.closest('#tab-new')) syncConditional(); });
   $('#btnSaveSettings').onclick=async()=>{ formToSettings(); await saveSettings(); settingsToForm(); $('#f_point').value=S.nextPoint; toast('Setup saved'); };
