@@ -327,7 +327,7 @@ small.mono{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
    JOA HWM Field — offline HWM documentation (form, photos, phone GPS).
    Surveyed coordinates and elevations are added in the office.
    ===================================================================== */
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.2';
 const FT = 0.3048; // international foot; office script handles US survey foot
 const COMMUNITIES = ['Glennallen','Crooked Creek','Ruby','Kotlik','Newtok','Mertarvik','Nunapitchuk','Marshall',
   'Pilot Station','Mountain Village','Akiak','Napaskiak','Circle','Bethel'];
@@ -876,7 +876,7 @@ async function doExport(onlyNew){
 
 /* ---------------- Tabs & wiring ---------------- */
 function switchTab(t){ $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t)); $$('main section').forEach(s=>s.classList.toggle('on',s.id==='tab-'+t));
-  if(t==='records') renderRecords(); if(t==='setup') devInfo(); targetsTabOn(t==='targets'); if(t==='new') { fillTargetSelect(); } window.scrollTo(0,0); }
+  if(t==='records') renderRecords(); if(t==='setup') devInfo(); targetsTabOn(t==='targets'); if(t==='new') { const tc=$('#t_comm').value; if(!$('#f_community').value&&tc&&!editing){ if(COMMUNITIES.includes(tc)) $('#f_community').value=tc; else { $('#f_community').value='other'; $('#f_community_other').value=tc; } syncConditional(); } fillTargetSelect(); } window.scrollTo(0,0); }
 function devInfo(){
   $('#devinfo').innerHTML=`<b>App</b><span>${APP_VERSION}</span><b>Location</b><span>${navigator.geolocation?'Available':'NOT available'}</span>
   <b>Offline</b><span>${'serviceWorker' in navigator&&navigator.serviceWorker.controller?'Installed for offline use':'Not yet cached (open once with signal)'}</span>
