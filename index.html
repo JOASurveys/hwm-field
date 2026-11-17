@@ -286,47 +286,32 @@ small.mono{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
     <div id="storeInfo" class="note ok hide"></div>
   </div>
   <div class="card" id="ccCard">
-    <h2>Control checks <span id="ccCount"></span></h2>
-    <p style="margin:0 0 8px;font-size:14px;color:var(--muted)">Log every base setup and every benchmark check-in shot with the data collector. Exported with the HWMs.</p>
-    <button class="btn primary" id="btnCcNew">＋ Log control check</button>
+    <h2>Other survey points <span id="ccCount"></span></h2>
+    <p style="margin:0 0 8px;font-size:14px;color:var(--muted)">Document every point you shoot that isn't an HWM: benchmarks and control, base setups, check shots, ground shots. Phone position and photos only; the surveyed values come from the data collector.</p>
+    <button class="btn primary" id="btnCcNew">＋ Log a survey point</button>
     <div id="ccForm" class="hide" style="margin-top:12px">
       <label class="req" for="cc_comm">Community</label><select id="cc_comm"></select>
-      <label class="req" for="cc_mark">Mark</label><select id="cc_mark"></select>
-      <div id="cc_otherWrap" class="hide"><label for="cc_other">Mark name / ID</label><input id="cc_other" placeholder="e.g. TEMP1, nail in pavement"></div>
-      <label class="req">Purpose</label>
-      <div class="seg" data-name="cc_purpose">
-        <label><input type="radio" name="cc_purpose" value="Base setup"><span>Base setup</span></label>
-        <label><input type="radio" name="cc_purpose" value="Check-in, start of day" checked><span>Check-in, start</span></label>
-        <label><input type="radio" name="cc_purpose" value="Check-in, end of day"><span>Check-in, end</span></label>
-        <label><input type="radio" name="cc_purpose" value="Check-in, other"><span>Other check</span></label>
+      <label class="req">Point type</label>
+      <div class="seg" data-name="cc_type">
+        <label><input type="radio" name="cc_type" value="Benchmark / control" checked><span>Benchmark / control</span></label>
+        <label><input type="radio" name="cc_type" value="Base setup"><span>Base setup</span></label>
+        <label><input type="radio" name="cc_type" value="Check shot"><span>Check shot</span></label>
+        <label><input type="radio" name="cc_type" value="Other shot"><span>Other shot</span></label>
       </div>
-      <label class="req">Mark condition</label>
-      <div class="seg" data-name="cc_cond">
-        <label><input type="radio" name="cc_cond" value="Good" checked><span>Good</span></label>
-        <label><input type="radio" name="cc_cond" value="Disturbed"><span>Disturbed</span></label>
-        <label><input type="radio" name="cc_cond" value="Not found"><span>Not found</span></label>
-        <label><input type="radio" name="cc_cond" value="Destroyed"><span>Destroyed</span></label>
+      <label for="cc_mark">Mark from the recon<span class="hint">Optional</span></label><select id="cc_mark"></select>
+      <label class="req" for="cc_pt">Point number / name<span class="hint">As stored in the data collector</span></label><input id="cc_pt" placeholder="e.g. 1000, RM36, TEMP1">
+      <label>Location</label>
+      <button class="btn" id="btnCcPos" type="button">📍 Use my location</button>
+      <div id="cc_posRes"></div>
+      <label>Photos</label>
+      <div class="btns">
+        <label class="btn primary" style="margin:0">📷 Take photo<input type="file" id="cc_photo" accept="image/*" capture="environment" class="hide"></label>
+        <label class="btn" style="margin:0">Add from gallery<input type="file" id="cc_photo_gal" accept="image/*" multiple class="hide"></label>
       </div>
-      <div class="grid2">
-        <div><label for="cc_pt">Data‑collector point / file</label><input id="cc_pt" placeholder="e.g. 1000 or CHK1"></div>
-        <div><label for="cc_ht">Antenna / rod height</label><input id="cc_ht" type="number" step="0.001" inputmode="decimal"></div>
-      </div>
-      <div class="grid2">
-        <div><label for="cc_known">Known NAVD88 (m)<span class="hint">From the recon; edit if needed</span></label><input id="cc_known" type="number" step="0.001" inputmode="decimal"></div>
-        <div><label for="cc_meas">Measured NAVD88<span class="hint">From the data collector</span></label><input id="cc_meas" type="number" step="0.001" inputmode="decimal"></div>
-      </div>
-      <div class="seg" data-name="cc_units" style="margin-top:6px">
-        <label><input type="radio" name="cc_units" value="ft" checked><span>Antenna &amp; measured in ft</span></label>
-        <label><input type="radio" name="cc_units" value="m"><span>in m</span></label>
-      </div>
-      <div id="cc_res" class="note hide"></div>
-      <label for="cc_notes">Notes</label><textarea id="cc_notes" rows="2" placeholder="e.g. static started 09:12, receiver S/N, residual after re‑shoot"></textarea>
-      <div class="btns" style="margin-top:8px">
-        <label class="btn" style="margin:0">📷 Mark photo<input type="file" id="cc_photo" accept="image/*" capture="environment" class="hide"></label>
-        <span id="cc_photoCount" style="align-self:center;color:var(--muted)"></span>
-      </div>
+      <div class="thumbs" id="cc_thumbs"></div>
+      <label for="cc_notes">Description / notes</label><textarea id="cc_notes" rows="2" placeholder="e.g. lag bolt in power pole, mark in good condition"></textarea>
       <div class="btns" style="margin-top:10px">
-        <button class="btn primary" id="btnCcSave">Save check</button>
+        <button class="btn primary" id="btnCcSave">Save point</button>
         <button class="btn" id="btnCcCancel">Cancel</button>
       </div>
     </div>
@@ -374,7 +359,7 @@ small.mono{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
    JOA HWM Field — offline HWM documentation (form, photos, phone GPS).
    Surveyed coordinates and elevations are added in the office.
    ===================================================================== */
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 const FT = 0.3048; // international foot; office script handles US survey foot
 const COMMUNITIES = ['Glennallen','Crooked Creek','Ruby','Kotlik','Newtok','Mertarvik','Nunapitchuk','Marshall',
   'Pilot Station','Mountain Village','Akiak','Napaskiak','Circle','Bethel'];
@@ -688,7 +673,7 @@ function renderTargets(){
       <span class="dist">${t.db?fmtDist(t.db.d)+' '+dir16(t.db.b):(t.has?'':'<span style="color:var(--warn)">no coords</span>')}</span></div>
       <div class="what">${esc(t.what)}</div><div class="src">${esc(t.source)}${t.has?` · ${t.lat.toFixed(5)}, ${t.lon.toFixed(5)}`:' · location unknown, ask the community'}</div>
       ${t.statusNote?`<div class="src">Note: ${esc(t.statusNote)}</div>`:''}
-      <div class="btns" style="margin-top:6px">${t.priority===9?(()=>{ const n=(window._ccCache||[]).filter(c=>c.community===t.community&&c.mark===t.id); return `${n.length?`<span class="tag q4">Checked ${n.length}×</span>`:''}<button class="btn" data-tcc="${esc(t.key)}">Log check‑in</button>`; })()
+      <div class="btns" style="margin-top:6px">${t.priority===9?(()=>{ const n=(window._ccCache||[]).filter(c=>c.community===t.community&&c.mark===t.id); return `${n.length?`<span class="tag q4">Logged ${n.length}×</span>`:''}<button class="btn" data-tcc="${esc(t.key)}">Log this point</button>`; })()
         :`${st}<button class="btn" data-tstart="${esc(t.key)}">Start HWM here</button>
       <button class="btn" data-tnone="${esc(t.key)}">${t.status==='open'?'No mark found…':'Reopen'}</button>`}</div></div>`;}).join('')
     :`<p style="color:var(--muted)">${comm?'No targets for '+esc(comm)+'.':'Import the desktop recon files above.'}</p>`;
@@ -891,88 +876,84 @@ async function storageInfo(){
 }
 
 
-/* ---------------- Control checks (base setups and benchmark check-ins) ---------------- */
-const CC_TOL_FT=0.10;   // check-in residual flagged above this (|measured − known|)
-let ccEdit=null, ccPhotos=[];
+/* ---------------- Other survey points (benchmarks, base setups, check and ground shots) ----------------
+   Documentation only: point name, phone position and photos. Surveyed values come from the data collector. */
+let ccEdit=null, ccPhotos=[], ccPos=null;
 const ccVal=n=>($(`input[name="${n}"]:checked`)||{}).value||'';
 const ccSet=(n,v)=>{ const el=$(`input[name="${n}"][value="${v}"]`); if(el) el.checked=true; };
-function bmKnown(t){ const m=String(t.what||'').match(/NAVD ?88\s*([-\d.]+)\s*m/i); return m?+m[1]:null; }
 function ccMarks(comm){ return TG.filter(t=>t.community===comm&&t.priority===9).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true})); }
 function ccFillMarks(sel){
-  const comm=$('#cc_comm').value; const ms=ccMarks(comm);
-  $('#cc_mark').innerHTML='<option value="">— choose —</option>'+ms.map(t=>`<option value="${esc(t.id)}">${esc(t.id)}${bmKnown(t)!=null?' · '+bmKnown(t).toFixed(3)+' m':''}</option>`).join('')+'<option value="__other">Other / temporary point…</option>';
-  if(sel!=null) $('#cc_mark').value=sel; ccMarkChanged(false);
+  const ms=ccMarks($('#cc_comm').value);
+  $('#cc_mark').innerHTML='<option value="">— none / new point —</option>'+ms.map(t=>`<option value="${esc(t.id)}">${esc(t.id)}</option>`).join('');
+  $('#cc_mark').value=sel||'';
 }
-function ccMarkChanged(fillKnown=true){
-  const v=$('#cc_mark').value; $('#cc_otherWrap').classList.toggle('hide',v!=='__other');
-  if(fillKnown){ const t=TG.find(x=>x.community===$('#cc_comm').value&&x.id===v); $('#cc_known').value=t&&bmKnown(t)!=null?bmKnown(t).toFixed(3):''; }
-  ccResidual();
-}
-function ccResid(c){ if(c.known_m==null||c.measured==null||isNaN(c.known_m)||isNaN(c.measured)) return null;
-  const meas_m=c.units==='ft'?c.measured*FT_INTL:c.measured; return meas_m-c.known_m; }
-const FT_INTL=0.3048;
-function ccResTag(r){ if(r==null) return ''; const ft=r/FT_INTL; const ok=Math.abs(ft)<=CC_TOL_FT;
-  return `<span class="tag ${ok?'q4':'none'}">Δ ${ft>=0?'+':''}${ft.toFixed(3)} ft / ${r>=0?'+':''}${r.toFixed(3)} m${ok?'':' · CHECK'}</span>`; }
-function ccResidual(){ const c={known_m:parseFloat($('#cc_known').value),measured:parseFloat($('#cc_meas').value),units:ccVal('cc_units')};
-  const r=ccResid(c); const el=$('#cc_res'); if(r==null){ el.classList.add('hide'); return; }
-  const ok=Math.abs(r/FT_INTL)<=CC_TOL_FT; el.className='note '+(ok?'ok':'warn');
-  el.innerHTML=`Residual (measured − known): <b>${(r/FT_INTL>=0?'+':'')+(r/FT_INTL).toFixed(3)} ft</b> (${(r>=0?'+':'')+r.toFixed(3)} m). ${ok?'Within ±'+CC_TOL_FT.toFixed(2)+' ft.':'Over ±'+CC_TOL_FT.toFixed(2)+' ft: re‑shoot, check the antenna height and the mark, and note what you find.'}`; }
-function ccOpen(comm,markId,rec){
-  ccEdit=rec||null; ccPhotos=[];
+function ccPosRender(){ const el=$('#cc_posRes'); if(!ccPos){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="note ${ccPos.acc!=null&&ccPos.acc<=15?'ok':'warn'}">${esc(ccPos.src||'Phone GPS')}: ${ccPos.lat.toFixed(6)}, ${ccPos.lon.toFixed(6)}${ccPos.acc!=null?' · ±'+hDisp(ccPos.acc):''}</div>`; }
+function ccCapturePos(){ if(!fixFresh()){ toast('No phone location yet. Try again in a moment.'); return; }
+  ccPos={src:'Phone GPS',lat:lastFix.lat,lon:lastFix.lon,acc:lastFix.acc,time:new Date(lastFix.t).toISOString()}; ccPosRender(); }
+async function ccOpen(comm,markId,rec){
+  ccEdit=rec||null; ccPhotos=[]; ccPos=rec?.pos||null;
   const cs=[...new Set([...targetComms(),...COMMUNITIES])];
   $('#cc_comm').innerHTML=cs.map(c=>`<option>${esc(c)}</option>`).join('');
   $('#cc_comm').value=rec?rec.community:(comm||$('#t_comm').value||cs[0]);
-  ccFillMarks(rec?(rec.mark_from_list?rec.mark:'__other'):(markId||''));
-  if(!rec&&markId) ccMarkChanged(true);
-  $('#cc_other').value=rec&&!rec.mark_from_list?rec.mark:'';
-  ccSet('cc_purpose',rec?rec.purpose:(ccDoneToday($('#cc_comm').value)?'Check-in, end of day':'Check-in, start of day'));
-  ccSet('cc_cond',rec?rec.condition:'Good'); ccSet('cc_units',rec?rec.units:(S.units==='m'?'m':'ft'));
-  $('#cc_pt').value=rec?rec.dc_point||'':''; $('#cc_ht').value=rec&&rec.ant_height!=null?rec.ant_height:'';
-  if(rec) $('#cc_known').value=rec.known_m!=null?rec.known_m:''; $('#cc_meas').value=rec&&rec.measured!=null?rec.measured:'';
-  $('#cc_notes').value=rec?rec.notes||'':''; $('#cc_photoCount').textContent=rec&&(rec.photos||[]).length?`${rec.photos.length} photo(s) saved`:'';
-  ccResidual(); $('#ccForm').classList.remove('hide'); $('#btnCcNew').classList.add('hide');
+  ccFillMarks(rec?rec.mark:(markId||''));
+  ccSet('cc_type',rec?rec.type:'Benchmark / control');
+  $('#cc_pt').value=rec?rec.point:(markId?markId.split(/\s/)[0]:''); $('#cc_notes').value=rec?rec.notes||'':'';
+  if(rec) for(const id of rec.photos||[]){ const ph=await dbGet('photos',id); if(ph) ccPhotos.push({id,blob:ph.blob,url:URL.createObjectURL(ph.blob),hdg:ph.hdg,hdgRef:ph.hdgRef,hdgSrc:ph.hdgSrc,isNew:false}); }
+  if(!ccPos&&fixFresh()) ccCapturePos(); ccPosRender(); ccThumbs();
+  $('#ccForm').classList.remove('hide'); $('#btnCcNew').classList.add('hide');
   switchTab('records'); $('#ccCard').scrollIntoView({behavior:'smooth'});
 }
-function ccDoneToday(comm){ const d=new Date().toISOString().slice(0,10); return (window._ccCache||[]).some(c=>c.community===comm&&c.created.slice(0,10)===d&&/start/.test(c.purpose)); }
-function ccClose(){ ccEdit=null; ccPhotos=[]; $('#ccForm').classList.add('hide'); $('#btnCcNew').classList.remove('hide'); }
+function ccClose(){ ccEdit=null; ccPhotos=[]; ccPos=null; $('#ccForm').classList.add('hide'); $('#btnCcNew').classList.remove('hide'); }
+function ccThumbs(){
+  $('#cc_thumbs').innerHTML=ccPhotos.map((p,i)=>`<figure><img src="${p.url}" alt="Point photo ${i+1}">${p.hdg!=null?`<span style="position:absolute;left:4px;top:72px;background:rgba(0,0,0,.65);color:#fff;font:700 12px system-ui;padding:1px 5px;border-radius:4px">${photoDirLabel(p)}</span>`:''}<button data-ci="${i}" aria-label="Remove photo">×</button></figure>`).join('');
+  $$('#cc_thumbs button[data-ci]').forEach(b=>b.onclick=()=>{ ccPhotos.splice(+b.dataset.ci,1); ccThumbs(); });
+}
+async function ccOnPhoto(e){ const fromCamera=e.target.id==='cc_photo'; const files=[...e.target.files]; e.target.value='';
+  const live=(fromCamera&&CMP.on)?await compassNow(1200):null;
+  for(const f of files){ try{ const x=await readExif(f); const blob=await processPhoto(f);
+      const hdg=x.hdg!=null?x.hdg:(live!=null?Math.round(live):null);
+      ccPhotos.push({blob,orig:f,url:URL.createObjectURL(blob),isNew:true,hdg,hdgRef:hdg!=null?(x.hdg!=null?(x.hdgRef||'T'):'T'):null,hdgSrc:x.hdg!=null?'photo':(live!=null?'compass':null),lat:x.lat??null,lon:x.lon??null});
+      if(!ccPos&&x.lat!=null) { ccPos={src:'Photo GPS',lat:x.lat,lon:x.lon,acc:null}; ccPosRender(); }
+    }catch(err){ toast('Could not read photo'); } }
+  if(!ccPos&&fixFresh()) ccCapturePos();
+  ccThumbs(); }
 async function ccSave(){
   if(!S.team||!S.observer){ toast('Set Team ID and initials on the Setup tab first'); return; }
-  const mv=$('#cc_mark').value; const other=mv==='__other';
-  const mark=other?$('#cc_other').value.trim():mv;
-  if(!mark){ toast('Missing: mark'); return; }
-  const now=new Date().toISOString(); const num=v=>{ const x=parseFloat(v); return isNaN(x)?null:x; };
-  const c={...(ccEdit||{}), id:ccEdit?ccEdit.id:`${S.team}-CC-${now.replace(/[-:.TZ]/g,'').slice(0,14)}`, created:ccEdit?ccEdit.created:now, updated:now,
-    team:S.team, observer:S.observer, community:$('#cc_comm').value, mark, mark_from_list:!other, purpose:ccVal('cc_purpose'), condition:ccVal('cc_cond'),
-    dc_point:$('#cc_pt').value.trim(), ant_height:num($('#cc_ht').value), known_m:num($('#cc_known').value), measured:num($('#cc_meas').value), units:ccVal('cc_units'),
-    notes:$('#cc_notes').value.trim(), pos:ccEdit?.pos||(lastFix&&fixFresh()?{lat:lastFix.lat,lon:lastFix.lon,acc:lastFix.acc}:null), exported:false};
-  c.residual_m=ccResid(c);
-  const ids=[...(ccEdit?.photos||[])];
-  for(const ph of ccPhotos){ const id='cc'+Date.now()+Math.random().toString(36).slice(2,6); await dbPut('photos',{id,blob:ph.blob,orig:ph.orig,origName:ph.orig?.name||'',hdg:null,lat:null,lon:null,taken:now}); ids.push(id); }
-  c.photos=ids; await dbPut('checks',c);
-  toast(c.residual_m!=null&&Math.abs(c.residual_m/FT_INTL)>CC_TOL_FT?'Saved. Residual over tolerance: re‑shoot or note why.':'Control check saved',3500);
-  ccClose(); renderChecks();
+  const point=$('#cc_pt').value.trim(); const miss=[];
+  if(!point) miss.push('point number / name'); if(!ccPhotos.length) miss.push('photo');
+  if(miss.length){ toast('Missing: '+miss.join(', '),4000); return; }
+  if(!ccPos&&fixFresh()) ccCapturePos();
+  if(!ccPos&&!confirm('No phone location. Save without a position?')) return;
+  const now=new Date().toISOString();
+  const ids=[];
+  for(const ph of ccPhotos){ if(!ph.isNew){ ids.push(ph.id); continue; }
+    const id='sp'+Date.now()+Math.random().toString(36).slice(2,6);
+    await dbPut('photos',{id,blob:ph.blob,orig:ph.orig,origName:ph.orig?.name||'',hdg:ph.hdg??null,hdgRef:ph.hdgRef||null,hdgSrc:ph.hdgSrc||null,lat:ph.lat??null,lon:ph.lon??null,taken:now}); ids.push(id); }
+  for(const old of ccEdit?.photos||[]) if(!ids.includes(old)) await dbDel('photos',old);
+  const c={id:ccEdit?ccEdit.id:`${S.team}-SP-${now.replace(/[-:.TZ]/g,'').slice(0,14)}`, created:ccEdit?ccEdit.created:now, updated:now,
+    team:S.team, observer:S.observer, community:$('#cc_comm').value, type:ccVal('cc_type'), mark:$('#cc_mark').value, point,
+    pos:ccPos, notes:$('#cc_notes').value.trim(), photos:ids, exported:false};
+  await dbPut('checks',c); toast('Survey point saved'); ccClose(); renderChecks();
   if($('#tab-targets').classList.contains('on')) renderTargets();
 }
 async function renderChecks(){
-  const cs=(await dbAll('checks')).sort((a,b)=>b.created.localeCompare(a.created)); window._ccCache=cs;
+  const cs=(await dbAll('checks')).filter(c=>c.point!=null).sort((a,b)=>b.created.localeCompare(a.created)); window._ccCache=cs;
   $('#ccCount').textContent=`(${cs.length})`;
-  $('#ccList').innerHTML=cs.length?cs.map(c=>`<div class="rec"><div class="meta"><div class="t">${esc(c.community)} · ${esc(c.mark)} · ${esc(c.purpose)}</div>
-    <div class="s"><span class="tag ${c.condition==='Good'?'':'none'}">${esc(c.condition)}</span>${ccResTag(c.residual_m)}${c.dc_point?`<span class="tag">DC ${esc(c.dc_point)}</span>`:''}${c.exported?'<span class="tag">exported</span>':''}
-    ${c.created.slice(0,16).replace('T',' ')}Z${(c.photos||[]).length?' · '+c.photos.length+' photo(s)':''}</div></div>
-    <button class="btn" data-ccedit="${c.id}">Edit</button><button class="btn danger" data-ccdel="${c.id}" aria-label="Delete">✕</button></div>`).join('')
-    :'<p style="color:var(--muted);margin:6px 0 0">No control checks logged on this device yet.</p>';
+  $('#ccList').innerHTML=cs.length?cs.map(c=>{ const g=c.pos; const q=!g?'none':(g.acc!=null&&g.acc<=15?'q4':'dev');
+    return `<div class="rec"><div class="meta"><div class="t">${esc(c.community)} · ${esc(c.point)} · ${esc(c.type)}</div>
+    <div class="s"><span class="tag ${q}">${g?(g.src||'GPS')+(g.acc!=null?' ±'+hDisp(g.acc):''):'NO POS'}</span>${c.mark&&c.mark!==c.point?`<span class="tag">${esc(c.mark)}</span>`:''}${c.exported?'<span class="tag">exported</span>':''}
+    ${c.created.slice(0,16).replace('T',' ')}Z · ${(c.photos||[]).length} photo(s)</div></div>
+    <button class="btn" data-ccedit="${c.id}">Edit</button><button class="btn danger" data-ccdel="${c.id}" aria-label="Delete">✕</button></div>`; }).join('')
+    :'<p style="color:var(--muted);margin:6px 0 0">No other survey points logged on this device yet.</p>';
   $$('[data-ccedit]').forEach(b=>b.onclick=()=>ccOpen(null,null,cs.find(c=>c.id===b.dataset.ccedit)));
-  $$('[data-ccdel]').forEach(b=>b.onclick=async()=>{ if(!confirm('Delete this control check?')) return; const c=cs.find(x=>x.id===b.dataset.ccdel); for(const p of c.photos||[]) await dbDel('photos',p); await dbDel('checks',c.id); renderChecks(); });
+  $$('[data-ccdel]').forEach(b=>b.onclick=async()=>{ if(!confirm('Delete this survey point and its photos?')) return; const c=cs.find(x=>x.id===b.dataset.ccdel); for(const p of c.photos||[]) await dbDel('photos',p); await dbDel('checks',c.id); renderChecks(); });
 }
-async function ccOnPhoto(e){ const files=[...e.target.files]; e.target.value='';
-  for(const f of files){ try{ ccPhotos.push({blob:await processPhoto(f),orig:f}); }catch(err){ toast('Could not read photo'); } }
-  $('#cc_photoCount').textContent=`${ccPhotos.length+((ccEdit?.photos||[]).length)} photo(s)`; }
-const CC_COLS=['check_id','team','observer','community','mark','purpose','condition','dc_point','antenna_height','units','known_navd88_m','measured_navd88','measured_navd88_m','residual_m','residual_ft','within_tolerance','phone_lat','phone_lon','created_utc','notes','photos'];
-function ccRow(c,photoNames){ const mm=c.measured==null?null:(c.units==='ft'?c.measured*FT_INTL:c.measured); const r=c.residual_m;
-  return {check_id:c.id,team:c.team,observer:c.observer,community:c.community,mark:c.mark,purpose:c.purpose,condition:c.condition,dc_point:c.dc_point,
-    antenna_height:c.ant_height,units:c.units,known_navd88_m:c.known_m,measured_navd88:c.measured,measured_navd88_m:mm==null?'':mm.toFixed(4),
-    residual_m:r==null?'':r.toFixed(4),residual_ft:r==null?'':(r/FT_INTL).toFixed(3),within_tolerance:r==null?'':(Math.abs(r/FT_INTL)<=CC_TOL_FT?'yes':'NO'),
-    phone_lat:c.pos?.lat?.toFixed(7)??'',phone_lon:c.pos?.lon?.toFixed(7)??'',created_utc:c.created,notes:c.notes,photos:photoNames.join(';')}; }
+const CC_COLS=['record_id','team','observer','community','point','point_type','recon_mark','phone_lat','phone_lon','phone_accuracy_m','position_source','created_utc','notes','photos','photo_directions'];
+function ccRow(c,photoNames,dirs){
+  return {record_id:c.id,team:c.team,observer:c.observer,community:c.community,point:c.point,point_type:c.type,recon_mark:c.mark||'',
+    phone_lat:c.pos?.lat?.toFixed(7)??'',phone_lon:c.pos?.lon?.toFixed(7)??'',phone_accuracy_m:c.pos?.acc!=null?c.pos.acc.toFixed(1):'',position_source:c.pos?.src||'',
+    created_utc:c.created,notes:c.notes,photos:photoNames.join(';'),photo_directions:dirs.join(';')}; }
 
 /* ---------------- Export (zip, no compression) ---------------- */
 const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
@@ -1008,7 +989,7 @@ async function doExport(onlyNew){
   const withOrig=$('#exOrig').checked;
   let recs=(await dbAll('records')).sort((a,b)=>a.created.localeCompare(b.created));
   if(onlyNew) recs=recs.filter(r=>!r.exported);
-  let ccs=(await dbAll('checks')).sort((a,b)=>a.created.localeCompare(b.created)); if(onlyNew) ccs=ccs.filter(c=>!c.exported);
+  let ccs=(await dbAll('checks')).filter(c=>c.point!=null).sort((a,b)=>a.created.localeCompare(b.created)); if(onlyNew) ccs=ccs.filter(c=>!c.exported);
   if(!recs.length&&!ccs.length){ toast('Nothing to export'); return; }
   toast('Building export…');
   const enc=new TextEncoder(); const files=[]; const rows=[]; const feats=[];
@@ -1028,14 +1009,18 @@ async function doExport(onlyNew){
   const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,13)+'Z'; const base=`HWM_${S.team||'X'}_${stamp}`;
   files.unshift({name:`${base}_records.csv`,data:enc.encode('﻿'+CSV_COLS.join(',')+'\r\n'+rows.join('\r\n')+'\r\n')});
   files.push({name:`${base}_records.geojson`,data:enc.encode(JSON.stringify({type:'FeatureCollection',crs_note:'WGS84 phone GPS, approximate locator only; surveyed coordinates are added in the office',features:feats},null,1))});
-  if(ccs.length){ const crow=[];
-    for(const c of ccs){ const nm=[]; for(let i=0;i<(c.photos||[]).length;i++){ const p=await dbGet('photos',c.photos[i]); if(!p) continue;
-        const stem=`${c.team}_${(c.community||'X').replace(/\W+/g,'')}_control_${String(c.mark).replace(/\W+/g,'')}_${c.created.slice(0,10).replace(/-/g,'')}_${i+1}`;
-        files.push({name:`photos/${stem}.jpg`,data:new Uint8Array(await p.blob.arrayBuffer())}); nm.push(`photos/${stem}.jpg`);
+  if(ccs.length){ const crow=[]; const sfeats=[];
+    for(const c of ccs){ const nm=[], dirs=[]; for(let i=0;i<(c.photos||[]).length;i++){ const p=await dbGet('photos',c.photos[i]); if(!p) continue;
+        const stem=`${c.team}_${(c.community||'X').replace(/\W+/g,'')}_pt_${String(c.point).replace(/\W+/g,'')}_${i+1}`;
+        const cap=await captioned(p.blob,[c.community,`Pt ${c.point}`,c.created.slice(0,10),photoDirLabel(p)||null].filter(Boolean).join(' · '));
+        files.push({name:`photos/${stem}.jpg`,data:new Uint8Array(await cap.arrayBuffer())}); nm.push(`photos/${stem}.jpg`);
+        dirs.push(p.hdg==null?'':`${photoDirLabel(p)} (${Math.round(p.hdg)}° true)`);
         if(withOrig&&p.orig) files.push({name:`INTERNAL_originals_with_metadata/${stem}_orig${((p.origName||'').match(/\.\w+$/)||['.jpg'])[0].toLowerCase()}`,data:new Uint8Array(await p.orig.arrayBuffer())}); }
-      const o=ccRow(c,nm); crow.push(CC_COLS.map(k=>csvCell(o[k])).join(',')); }
-    files.push({name:`${base}_control_checks.csv`,data:enc.encode('\ufeff'+CC_COLS.join(',')+'\r\n'+crow.join('\r\n')+'\r\n')}); }
-  files.push({name:`${base}_backup.json`,data:enc.encode(JSON.stringify({app:'JOA HWM Field',version:APP_VERSION,exported:new Date().toISOString(),settings:S,records:recs,control_checks:ccs},null,1))});
+      const o=ccRow(c,nm,dirs); crow.push(CC_COLS.map(k=>csvCell(o[k])).join(','));
+      sfeats.push({type:'Feature',geometry:c.pos?{type:'Point',coordinates:[+c.pos.lon.toFixed(7),+c.pos.lat.toFixed(7)]}:null,properties:o}); }
+    files.push({name:`${base}_survey_points.csv`,data:enc.encode('﻿'+CC_COLS.join(',')+'\r\n'+crow.join('\r\n')+'\r\n')});
+    files.push({name:`${base}_survey_points.geojson`,data:enc.encode(JSON.stringify({type:'FeatureCollection',crs_note:'WGS84 phone GPS, approximate locator only',features:sfeats},null,1))}); }
+  files.push({name:`${base}_backup.json`,data:enc.encode(JSON.stringify({app:'JOA HWM Field',version:APP_VERSION,exported:new Date().toISOString(),settings:S,records:recs,survey_points:ccs},null,1))});
   const allT=await dbAll('targets');
   if(allT.length){
     const allR=await dbAll('records'); const TC=['community','id','priority','target','lat_wgs84','lon_wgs84','status','hwm_points','note','status_time','status_by','source','what_to_survey'];
@@ -1049,7 +1034,7 @@ async function doExport(onlyNew){
   document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
   for(const r of recs){ r.exported=true; await dbPut('records',r); }
   for(const c of ccs){ c.exported=true; await dbPut('checks',c); }
-  renderRecords(); renderChecks(); toast(`Exported ${recs.length} HWM(s)${ccs.length?` and ${ccs.length} control check(s)`:''} → ${base}.zip`,4000);
+  renderRecords(); renderChecks(); toast(`Exported ${recs.length} HWM(s)${ccs.length?` and ${ccs.length} survey point(s)`:''} → ${base}.zip`,4000);
 }
 
 /* ---------------- Tabs & wiring ---------------- */
@@ -1071,8 +1056,9 @@ async function init(){
   $('#f_notes').oninput=piiCheck;
   document.addEventListener('change',e=>{ if(e.target.closest('#tab-new')) syncConditional(); });
   $('#btnSaveSettings').onclick=async()=>{ formToSettings(); await saveSettings(); settingsToForm(); $('#f_point').value=S.nextPoint; toast('Setup saved'); };
-  $('#btnCcNew').onclick=()=>ccOpen(); $('#btnCcCancel').onclick=ccClose; $('#btnCcSave').onclick=ccSave; $('#cc_comm').onchange=()=>ccFillMarks(''); $('#cc_mark').onchange=()=>ccMarkChanged(true);
-  ['cc_known','cc_meas'].forEach(i=>$('#'+i).oninput=ccResidual); $$('input[name=cc_units]').forEach(el=>el.onchange=ccResidual); $('#cc_photo').onchange=ccOnPhoto;
+  $('#btnCcNew').onclick=()=>ccOpen(); $('#btnCcCancel').onclick=ccClose; $('#btnCcSave').onclick=ccSave; $('#cc_comm').onchange=()=>ccFillMarks('');
+  $('#cc_mark').onchange=()=>{ if($('#cc_mark').value&&!$('#cc_pt').value.trim()) $('#cc_pt').value=$('#cc_mark').value.split(/\s/)[0]; };
+  $('#btnCcPos').onclick=ccCapturePos; $('#cc_photo').onchange=ccOnPhoto; $('#cc_photo_gal').onchange=ccOnPhoto; $('#cc_photo').parentElement.addEventListener('click',()=>{ startCompass(); });
   $('#btnExport').onclick=()=>doExport(false); $('#btnExportNew').onclick=()=>doExport(true);
   $('#btnWipe').onclick=async()=>{ const n=(await dbAll('records')).length; if(prompt(`Type DELETE to remove all ${n} records and photos from this device. Export first!`)!=='DELETE') return;
     await dbClear('records'); await dbClear('photos'); await dbClear('checks'); renderChecks(); renderRecords(); toast('Device cleared'); };
